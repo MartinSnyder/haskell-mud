@@ -3,7 +3,7 @@ module Command ( Command
                , applyCommand
                ) where
 
-import Data.List (elemIndex, take, drop)
+import Data.List (elemIndex, take, drop, sort)
 import qualified Data.Map as Map
 
 import World
@@ -12,6 +12,7 @@ import PlayerData
 
 data Command = Noop
              | Invalid String
+             | Help
              | Broadcast String
              | Yell String
              | Say String
@@ -19,7 +20,8 @@ data Command = Noop
              | Look
              deriving (Eq, Show)
 
-commandBuilders = Map.fromList [ ("broadcast", \rest -> Broadcast rest)
+commandBuilders = Map.fromList [ ("help", \_ -> Help)
+                               , ("broadcast", \rest -> Broadcast rest)
                                , ("yell", \rest -> Yell rest)
                                , ("say", \rest -> Say rest)
                                , ("go", \rest -> Go rest)
@@ -48,6 +50,11 @@ applyCommand userId command world =
             Right world
         Invalid text ->
             Left $ "Invalid input: " ++ text
+        Help ->
+            let
+                commands = sort $ Map.keys commandBuilders
+            in
+                Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
         Broadcast message ->
             sendBroadcastMessage message world
         Yell text ->
