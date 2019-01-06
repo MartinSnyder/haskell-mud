@@ -1,0 +1,21 @@
+name:                haskell-mud
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/MartinSnyder/haskell-mud#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Martin Snyder
+maintainer:          haskell@martinsnyder.net
+copyright:           Copyright Martin Snyder
+category:            Sandbox
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable haskell-mud
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                     , containers
