@@ -6,6 +6,7 @@ import RoomDef
 import Link
 import World (buildWorld)
 import Repl
+import WebServer
 
 initialWorld = buildWorld (0, 0)
   [ RoomDef (0, 0) "The Spawning Pool" "Creatures of varying size form within the primordial soup!"
@@ -16,4 +17,5 @@ initialWorld = buildWorld (0, 0)
       $ Map.fromList [ ("North", Link (1,0)) ]
   ]
 
-main = repl initialWorld
+-- main = repl initialWorld
+main = webServer initialWorld

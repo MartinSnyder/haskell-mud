@@ -51,9 +51,9 @@ readInput world userId = do
 printOutput :: UserId -> World -> Either String World -> IO (World)
 printOutput userId prevWorld result =
   let
-    (messages, nextWorld) = case result of
+    (nextWorld, messages) = case result of
         Left err ->
-            ([err], prevWorld)
+            (prevWorld, [err])
         Right resultWorld ->
             World.extractOutput userId resultWorld
     output = foldl (\acc s -> acc ++ s ++ "\n") "" messages

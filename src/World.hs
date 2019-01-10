@@ -212,7 +212,7 @@ getPrompt userId world =
         Just room -> GameObj.sDesc room
         Nothing -> "Cmd"
 
-extractOutput :: UserId -> World -> ([String], World)
+extractOutput :: UserId -> World -> (World, [String])
 extractOutput userId world =
     case Map.lookup userId (World.connections world) of
         Just connection ->
@@ -220,6 +220,6 @@ extractOutput userId world =
                 messages = reverse . Connection.messages $ connection
                 nextConnection = connection { messages = [] }
                 nextWorld = world { connections = Map.insert userId nextConnection (World.connections world)}
-            in (messages, nextWorld)
+            in (nextWorld, messages)
         Nothing ->
-            ([], world)
+            (world, [])
