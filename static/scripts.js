@@ -18,6 +18,7 @@ var mud = {}; // Namespace
 		document.getElementById(mud.ENTRY_ID).focus();
 
 		mud.writeOutput('Welcome to HaskellMUD!');
+		mud.writeOutput('Type \'help\' for a list of commands');
 
 		var userHash = self.document.location.hash;
 		if (null === userHash || '' === userHash) {
