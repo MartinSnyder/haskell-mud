@@ -7,6 +7,7 @@ import Web.Spock.Config
 import Data.IORef
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (pack)
+import Network.Wai.Middleware.Static
 
 import Command
 import World
@@ -23,11 +24,9 @@ webServer world = do
 
 app :: Server ()
 app = do
-    -- get root $ do
-    --     world' <- getState >>= (liftIO . readIORef . world)
-    --     html $ pack $ show world'
-
-    get root $ do
+    get root $ redirect "/index.html"
+    middleware (staticPolicy (addBase "static"))
+    post "/action" $ do
         userId <- param' "uid"
         command <- param' "cmd"
         worldRef <- world <$> getState
@@ -41,4 +40,4 @@ app = do
                     (world, [ err ])
                 Right (nextWorld) ->
                     extractOutput userId nextWorld
-        html $ pack $ foldl (\acc s -> acc ++ "<br>" ++ s) "" output
+        html $ pack $ foldl (\acc s -> acc ++ "\n" ++ s) "" output
