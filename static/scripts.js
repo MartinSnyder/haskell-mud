@@ -1,5 +1,3 @@
-// File designed to be as "jslint.com clean" as possible
-
 var mud = {}; // Namespace
 
 (function () {
@@ -8,7 +6,7 @@ var mud = {}; // Namespace
 	// Constants
 	mud.ENTRY_ID = 'entry';
 	mud.OUTPUT_ID = 'output';
-	mud.POLLING_FREQUENCY = 5000;
+	mud.POLLING_FREQUENCY = 2000;
 
 	// Global variables
 	mud.user = null;
