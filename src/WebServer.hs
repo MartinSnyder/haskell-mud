@@ -8,7 +8,6 @@ import Data.IORef
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (pack)
 
-import PlayerData
 import Command
 import World
 
@@ -16,15 +15,9 @@ newtype ServerState = ServerState { world :: IORef World }
 
 type Server a = SpockM () () ServerState a
 
-setupWorld :: World -> World
-setupWorld world =
-    case addPlayer (PlayerData "Admin" "Admin") world of
-        Right world' -> world'
-        Left err -> error "Could not add Admin to initial world"
-
 webServer :: World -> IO ()
 webServer world = do
-    st <- ServerState <$> newIORef (setupWorld world)
+    st <- ServerState <$> newIORef world
     cfg <- defaultSpockCfg () PCNoDatabase st
     runSpock 8080 (spock cfg app)
 
@@ -39,7 +32,11 @@ app = do
         command <- param' "cmd"
         worldRef <- world <$> getState
         output <- liftIO $ atomicModifyIORef' worldRef $ \world ->
-            case applyCommand userId (parseCommand command) world of
+            let
+                operationResult = do
+                    world' <- addPlayerIfAbsent userId world
+                    applyCommand userId (parseCommand command) world'
+            in case operationResult of
                 Left err ->
                     (world, [ err ])
                 Right (nextWorld) ->

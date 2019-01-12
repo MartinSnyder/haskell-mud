@@ -1,8 +1,7 @@
 module World ( World
              , buildWorld
-             , getPrompt
              , extractOutput
-             , addPlayer
+             , addPlayerIfAbsent
              , followLink
              , sendBroadcastMessage
              , sendGlobalMessage
@@ -67,11 +66,15 @@ addConnection userId mobId world =
               , world { connections = Map.insert userId newConnection $ World.connections world }
               )
 
-addPlayer :: PlayerData -> World-> Either String World
-addPlayer playerData world = do
-    (mob, nextWorld) <- addMob (Right playerData) (entryRoomId world) (Just $ PlayerData.userId playerData) world
-    (connection, nextWorld') <- addConnection (PlayerData.userId playerData) (Mob.id mob) nextWorld
-    sendBroadcastMessage ((GameObj.sDesc mob) ++ " has entered the game") nextWorld'
+addPlayerIfAbsent :: UserId -> World-> Either String World
+addPlayerIfAbsent userId world =
+    case getPlayer userId world of
+        Right _ -> Right world
+        Left _ -> do
+            playerData <- Right $ PlayerData userId userId
+            (mob, nextWorld) <- addMob (Right playerData) (entryRoomId world) (Just userId) world
+            (connection, nextWorld') <- addConnection userId (Mob.id mob) nextWorld
+            sendBroadcastMessage ((GameObj.sDesc mob) ++ " has entered the game") nextWorld'
 
 getPlayer :: UserId -> World -> Either String Mob
 getPlayer userId world = do
@@ -200,17 +203,6 @@ sendLocalMessage userId possiblyTarget xtra message world =
     do
         actor <- getPlayer userId world
         sendMessageRoomId (Mob.id actor) possiblyTarget xtra message (locationId actor) world
-
-getPrompt :: UserId -> World -> String
-getPrompt userId world =
-    let
-        maybeRoom = do
-            connection <- Map.lookup userId (connections world)
-            mob <- Map.lookup (Connection.mobId connection) (mobs world)
-            Map.lookup (locationId mob) (rooms world)
-    in case maybeRoom of
-        Just room -> GameObj.sDesc room
-        Nothing -> "Cmd"
 
 extractOutput :: UserId -> World -> (World, [String])
 extractOutput userId world =
