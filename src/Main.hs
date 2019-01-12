@@ -1,6 +1,7 @@
 module Main where
 
 import qualified Data.Map as Map
+import System.Environment
 
 import RoomDef
 import Link
@@ -17,5 +18,13 @@ initialWorld = buildWorld (0, 0)
       $ Map.fromList [ ("North", Link (1,0)) ]
   ]
 
--- main = repl initialWorld
-main = webServer initialWorld
+main = do
+    args <- getArgs
+    case args of
+        [] -> do
+            putStrLn "Starting console because no port was specified for web interface"
+            repl initialWorld
+        [port] -> do
+            webServer initialWorld $ read port
+        _ ->
+            error "Too many command line arguments specified"

@@ -16,11 +16,11 @@ newtype ServerState = ServerState { world :: IORef World }
 
 type Server a = SpockM () () ServerState a
 
-webServer :: World -> IO ()
-webServer world = do
+webServer :: World -> Int -> IO ()
+webServer world port = do
     st <- ServerState <$> newIORef world
     cfg <- defaultSpockCfg () PCNoDatabase st
-    runSpock 8080 (spock cfg app)
+    runSpock port (spock cfg app)
 
 app :: Server ()
 app = do
