@@ -22,7 +22,9 @@ main = do
     args <- getArgs
     case args of
         [] -> do
-            putStrLn "Starting console because no port was specified for web interface"
+            port <- read <$> getEnv "PORT"
+            webServer initialWorld port
+        ["console"] ->
             repl initialWorld
         [port] -> do
             webServer initialWorld $ read port
