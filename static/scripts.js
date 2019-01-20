@@ -16,14 +16,7 @@ var mud = {}; // Namespace
 		document.getElementById(mud.ENTRY_ID).focus();
 
 		mud.writeOutput('Welcome to HaskellMUD!');
-		mud.writeOutput('Type \'help\' for a list of commands');
-
-		var userHash = self.document.location.hash;
-		if (null === userHash || '' === userHash) {
-			mud.user = prompt('Enter your username (append #username to URL to avoid this prompt)');
-		} else {
-			mud.user = userHash.substring(1);
-		}
+		mud.writeOutput('Enter your username:');
 
 		mud.pollingHandle = window.setInterval(function () { mud.processEntry(''); }, mud.POLLING_FREQUENCY);
 	};
@@ -36,8 +29,17 @@ var mud = {}; // Namespace
 			// Reset the text entry for the next command
 			oCtl.value = '';
 
-			// Process the entrt
-			mud.processEntry(sEntry);
+			if (mud.user === null) {
+				// Set the username first if we still need one
+				if (sEntry.length > 0) {
+					mud.user = sEntry;
+					mud.writeOutput('Type \'help\' for a list of commands');
+				}
+			}
+			else {
+				// Process the entry
+				mud.processEntry(sEntry);
+			}
 		}
 	};
 
@@ -55,6 +57,11 @@ var mud = {}; // Namespace
 	};
 
 	mud.processEntry = function (sEntry) {
+		// Early return if no user yet
+		if (null === mud.user) {
+			return;
+		}
+
 		var oAjaxRequest, sResponse, sOutput;
 		oAjaxRequest = new XMLHttpRequest();
 
