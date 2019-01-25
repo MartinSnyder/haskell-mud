@@ -1,5 +1,5 @@
 # haskell-mud
 
-See a running demo [HERE][mud-demo]
+See a running demo [here][mud-demo].
 
 [mud-demo]: https://martinsnyder.net/mud/
