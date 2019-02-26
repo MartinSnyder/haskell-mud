@@ -94,7 +94,7 @@ var mud = {}; // Namespace
 		var oOutput, sPadding;
 		oOutput = document.getElementById(mud.OUTPUT_ID);
 
-		// Get a spacer unles we are the first entry
+		// Get a spacer unless we are the first entry
 		sPadding = '\n';
 		if (oOutput.value.length === 0) {
 			sPadding = '';
