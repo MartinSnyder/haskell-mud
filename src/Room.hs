@@ -8,9 +8,11 @@ import GameObj
 import RoomDef
 import Link
 import Mob
+import Item
 
 data Room = Room { def :: RoomDef
                  , mobIds :: [MobId]
+                 , items :: [Item]
                  } deriving (Show)
 
 roomId :: Room -> DefId

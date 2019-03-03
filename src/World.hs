@@ -14,12 +14,14 @@ import qualified Data.Map as Map
 
 import GameDef
 import MobDef
+import ItemDef
 import RoomDef
 import PlayerData
 import GameObj
 import Room
 import Link
 import Mob
+import Item
 import Connection
 import Message
 
@@ -30,9 +32,14 @@ data World = World { nextMobId :: MobId
                    , connections :: Map.Map UserId Connection
                    } deriving (Show)
 
+buildRoom :: RoomDef -> Room
+buildRoom roomDef =
+    Room roomDef [] items
+    where items = fmap (\itemDef -> Item itemDef) (RoomDef.initialItems roomDef)
+
 roomListToMap :: [RoomDef] -> Map.Map DefId Room
 roomListToMap roomDefs =
-    foldl (\ acc roomDef -> Map.insert (GameDef.defId roomDef) (Room roomDef []) acc) Map.empty roomDefs
+    foldl (\ acc roomDef -> Map.insert (GameDef.defId roomDef) (buildRoom roomDef) acc) Map.empty roomDefs
 
 buildWorld :: DefId -> [RoomDef] -> World
 buildWorld entry roomDefs =
@@ -153,6 +160,7 @@ internalLookRoom room mobs connection world =
     let
         elements = [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (Map.keys $ links (def room))
                    , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap (GameObj.sDesc) mobs)
+                   , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap (GameObj.sDesc) (Room.items room))
                    ]
         text = foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
         nextConnection = sendMessage text connection

@@ -3,11 +3,13 @@ module RoomDef where
 import Data.Map
 
 import GameDef
+import ItemDef
 import Link
 
 data RoomDef = RoomDef { defId :: DefId
                        , name :: String
                        , desc :: String
+                       , initialItems :: [ItemDef]
                        , links :: Map String Link
                        } deriving (Show)
 
