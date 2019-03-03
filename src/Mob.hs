@@ -4,11 +4,13 @@ import GameDef
 import GameObj
 import MobDef
 import PlayerData
+import Item
 
 type MobId = Integer
 
 data Mob = Mob { id :: MobId
                , locationId :: DefId
+               , items :: [Item]
                , connectionId :: Maybe UserId
                , base :: Either MobDef PlayerData
                } deriving (Show, Eq)

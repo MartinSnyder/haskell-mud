@@ -7,6 +7,7 @@ module World ( World
              , sendGlobalMessage
              , sendLocalMessage
              , lookRoom
+             , showInventory
              , getItem
              ) where
 
@@ -56,7 +57,7 @@ addMob :: Either MobDef PlayerData -> DefId -> Maybe UserId -> World -> Either S
 addMob mobBase roomId connectionId world =
     let
         mobId = nextMobId world
-        newMob = Mob mobId roomId connectionId mobBase
+        newMob = Mob mobId roomId [] connectionId mobBase
         nextWorld = world { nextMobId = (nextMobId world) + 1
                           , mobs = Map.insert mobId newMob $ mobs world
                           }
@@ -177,15 +178,30 @@ lookRoom userId world =
         mobs <- mobIdsToMobs (mobIds room) world
         internalLookRoom room mobs connection world
 
+showInventory :: UserId -> World -> Either String World
+showInventory userId world =
+    do
+        connection <- getConnection userId world
+        mob <- getPlayer userId world
+        text <- return $ foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items mob))
+        nextConnection <- return $ sendMessage text connection
+        Right world { connections = Map.insert (Connection.userId nextConnection) nextConnection $ World.connections world }
+
 getItem :: UserId -> Maybe String -> World -> Either String World
 getItem userId keyword world =
     do
         mob <- getPlayer userId world
         sourceRoom <- getRoom (locationId mob) world
-        items <- return $ case keyword of
+        currentItems <- return $ Mob.items mob
+        roomItems <- return $ case keyword of
             Just keyword -> []
             Nothing -> Room.items sourceRoom
-        updateWorld world [ updateRoom (removeItems items) $ roomId sourceRoom ]
+        updateWorld world [ updateRoom (removeItems roomItems) $ roomId sourceRoom
+                          , updateMob (\mob -> Right $ mob { Mob.items = currentItems ++ roomItems }) (Mob.id mob)
+                          , sendMessageRoomId (Mob.id mob) Nothing "" message (roomId sourceRoom)
+                          ]
+    where
+        message = [Actor, ActorVerb "take" "takes", Const "some stuff."]
 
 updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =

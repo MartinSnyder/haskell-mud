@@ -36,7 +36,7 @@ removeItems :: [Item] -> Room -> Either String Room
 removeItems items room =
     case List.partition (\el -> elem el items) (Room.items room) of
         (match, notMatch) -> if (length match == length items) then
-            Right $ room { items = notMatch }
+            Right $ room { Room.items = notMatch }
         else
             Left $ "Not all specified items were found in the room " ++ show (roomId room)
 

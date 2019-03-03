@@ -18,6 +18,7 @@ data Command = Noop
              | Say String
              | Go String
              | Look
+             | Inventory
              | Get String
              deriving (Eq, Show)
 
@@ -27,6 +28,7 @@ commandBuilders = Map.fromList [ ("help", \_ -> Help)
                                , ("say", \rest -> Say rest)
                                , ("go", \rest -> Go rest)
                                , ("look", \_ -> Look)
+                               , ("inventory", \_ -> Inventory)
                                , ("get", \rest -> Get rest)
                                ]
 
@@ -69,6 +71,8 @@ applyCommand userId command world =
             followLink userId dir world
         Look ->
             lookRoom userId world
+        Inventory ->
+            showInventory userId world
         Get item ->
             if (item == "all") then
                 getItem userId Nothing world
