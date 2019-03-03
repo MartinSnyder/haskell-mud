@@ -7,6 +7,7 @@ module World ( World
              , sendGlobalMessage
              , sendLocalMessage
              , lookRoom
+             , getItem
              ) where
 
 import Data.List
@@ -175,6 +176,16 @@ lookRoom userId world =
         room <- getRoom (locationId mob) world
         mobs <- mobIdsToMobs (mobIds room) world
         internalLookRoom room mobs connection world
+
+getItem :: UserId -> Maybe String -> World -> Either String World
+getItem userId keyword world =
+    do
+        mob <- getPlayer userId world
+        sourceRoom <- getRoom (locationId mob) world
+        items <- return $ case keyword of
+            Just keyword -> []
+            Nothing -> Room.items sourceRoom
+        updateWorld world [ updateRoom (removeItems items) $ roomId sourceRoom ]
 
 updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =

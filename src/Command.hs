@@ -18,6 +18,7 @@ data Command = Noop
              | Say String
              | Go String
              | Look
+             | Get String
              deriving (Eq, Show)
 
 commandBuilders = Map.fromList [ ("help", \_ -> Help)
@@ -26,6 +27,7 @@ commandBuilders = Map.fromList [ ("help", \_ -> Help)
                                , ("say", \rest -> Say rest)
                                , ("go", \rest -> Go rest)
                                , ("look", \_ -> Look)
+                               , ("get", \rest -> Get rest)
                                ]
 
 getFirstWord :: String -> (String, String)
@@ -67,3 +69,8 @@ applyCommand userId command world =
             followLink userId dir world
         Look ->
             lookRoom userId world
+        Get item ->
+            if (item == "all") then
+                getItem userId Nothing world
+            else
+                getItem userId (Just item) world
