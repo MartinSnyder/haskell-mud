@@ -1,6 +1,7 @@
 module Main where
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import System.Environment
 
 import RoomDef
@@ -15,7 +16,7 @@ initialWorld = buildWorld (0, 0)
         (0, 0)
         "The Spawning Pool"
         "Creatures of varying size form within the primordial soup!"
-        [ ItemDef (0, 0) "A flat stone" "Time has smoothed this stone to have a perfectly flat surface" ]
+        [ ItemDef (0, 0) "A flat stone" "Time has smoothed this stone to have a perfectly flat surface" Set.empty ]
         $ Map.fromList [ ("Down", Link (1,0)) ]
   , RoomDef
         (1, 0)

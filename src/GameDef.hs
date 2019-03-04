@@ -6,3 +6,4 @@ class GameDef a where
     defId :: a -> DefId
     sDesc :: a -> String
     lDesc :: a -> String
+    matches :: a -> String -> Bool

@@ -21,6 +21,7 @@ roomId room = GameDef.defId (def room)
 instance GameObj Room where
     sDesc room = GameDef.sDesc $ Room.def room
     lDesc room = GameDef.lDesc $ Room.def room
+    matches room keyword = GameDef.matches (Room.def room) keyword
 
 addMobId :: MobId -> Room -> Either String Room
 addMobId mobId room =

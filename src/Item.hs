@@ -8,5 +8,6 @@ data Item = Item { base :: ItemDef
                  } deriving (Show, Eq)
 
 instance GameObj Item where
-    sDesc mob = ItemDef.sDesc $ Item.base mob
-    lDesc mob = ItemDef.lDesc $ Item.base mob
+    sDesc item = GameDef.sDesc $ Item.base item
+    lDesc item = GameDef.lDesc $ Item.base item
+    matches item keyword = GameDef.matches (Item.base item) keyword

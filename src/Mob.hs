@@ -17,8 +17,11 @@ data Mob = Mob { id :: MobId
 
 instance GameObj Mob where
     sDesc mob = case Mob.base mob of
-        Left def -> MobDef.sDesc $ def
+        Left def -> GameDef.sDesc def
         Right pd -> PlayerData.name pd
     lDesc mob = case Mob.base mob of
-        Left def -> MobDef.lDesc $ def
+        Left def -> GameDef.lDesc def
         Right pd -> "A player named " ++ PlayerData.name pd
+    matches mob keyword = case Mob.base mob of
+        Left def -> GameDef.matches def keyword
+        Right pd -> keyword == PlayerData.name pd
