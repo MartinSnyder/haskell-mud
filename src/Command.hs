@@ -79,8 +79,8 @@ applyCommand userId command world =
             lookRoom userId world
         Inventory ->
             showInventory userId world
-        Get item ->
-            if (item == "all") then
-                getItem userId Nothing world
+        Get keyword ->
+            if (keyword == "") then
+                Left $ "USAGE: get <keyword>"
             else
-                getItem userId (Just item) world
+                getItem userId keyword world

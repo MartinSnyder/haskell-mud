@@ -193,23 +193,20 @@ showInventory userId world =
         nextConnection <- return $ sendMessage text connection
         Right world { connections = Map.insert (Connection.userId nextConnection) nextConnection $ World.connections world }
 
-getItem :: UserId -> Maybe String -> World -> Either String World
+getItem :: UserId -> String -> World -> Either String World
 getItem userId keyword world =
     do
         mob <- getPlayer userId world
         sourceRoom <- getRoom (locationId mob) world
         currentItems <- return $ Mob.items mob
-        roomItems <- return $ case keyword of
-            Just keyword -> case findMatch keyword sourceRoom of
-                MatchItem item -> [ item ]
-                NoMatch -> []
-            Nothing -> Room.items sourceRoom
-        updateWorld world [ updateRoom (removeItems roomItems) $ roomId sourceRoom
-                          , updateMob (\mob -> Right $ mob { Mob.items = currentItems ++ roomItems }) (Mob.id mob)
+        item <- case findMatch keyword sourceRoom of
+            MatchItem item -> Right item
+            _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
+        message <- return [Actor, ActorVerb "take" "takes", Const $ GameObj.sDesc item]
+        updateWorld world [ updateRoom (removeItem item) $ roomId sourceRoom
+                          , updateMob (\mob -> Right $ mob { Mob.items = item : currentItems }) (Mob.id mob)
                           , sendMessageRoomId (Mob.id mob) Nothing "" message (roomId sourceRoom)
                           ]
-    where
-        message = [Actor, ActorVerb "take" "takes", Const "some stuff."]
 
 updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =
