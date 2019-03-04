@@ -26,6 +26,7 @@ import Mob
 import Item
 import Connection
 import Message
+import Match
 
 data World = World { nextMobId :: MobId
                    , entryRoomId :: DefId
@@ -194,7 +195,9 @@ getItem userId keyword world =
         sourceRoom <- getRoom (locationId mob) world
         currentItems <- return $ Mob.items mob
         roomItems <- return $ case keyword of
-            Just keyword -> []
+            Just keyword -> case findMatch keyword sourceRoom of
+                MatchItem item -> [ item ]
+                NoMatch -> []
             Nothing -> Room.items sourceRoom
         updateWorld world [ updateRoom (removeItems roomItems) $ roomId sourceRoom
                           , updateMob (\mob -> Right $ mob { Mob.items = currentItems ++ roomItems }) (Mob.id mob)
