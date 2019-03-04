@@ -4,13 +4,13 @@ import Data.Map
 
 import GameDef
 import ItemDef
-import Link
+import LinkDef
 
 data RoomDef = RoomDef { defId :: DefId
                        , name :: String
                        , desc :: String
                        , initialItems :: [ItemDef]
-                       , links :: Map String Link
+                       , links :: [LinkDef]
                        } deriving (Show)
 
 instance GameDef RoomDef where

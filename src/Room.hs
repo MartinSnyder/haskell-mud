@@ -14,10 +14,11 @@ import Match
 data Room = Room { def :: RoomDef
                  , mobIds :: [MobId]
                  , items :: [Item]
+                 , links :: Map String Link
                  } deriving (Show)
 
 roomId :: Room -> DefId
-roomId room = GameDef.defId (def room)
+roomId room = GameDef.defId (Room.def room)
 
 instance GameObj Room where
     sDesc room = GameDef.sDesc $ Room.def room
@@ -44,7 +45,7 @@ removeItems items room =
 
 findLink :: String -> Room -> Either String Link
 findLink linkId room =
-    case Map.lookup linkId $ links $ def room of
+    case Map.lookup linkId $ Room.links room of
         Just link -> Right link
         Nothing -> Left $  "Link " ++ linkId ++ " not found in room " ++ show (roomId room)
 

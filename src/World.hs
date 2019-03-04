@@ -13,10 +13,12 @@ module World ( World
 
 import Data.List
 import qualified Data.Map as Map
+import Data.Char (toLower)
 
 import GameDef
 import MobDef
 import ItemDef
+import LinkDef
 import RoomDef
 import PlayerData
 import GameObj
@@ -37,8 +39,11 @@ data World = World { nextMobId :: MobId
 
 buildRoom :: RoomDef -> Room
 buildRoom roomDef =
-    Room roomDef [] items
-    where items = fmap (\itemDef -> Item itemDef) (RoomDef.initialItems roomDef)
+    let
+        links = Map.fromList $ fmap (\linkDef -> (map toLower $ LinkDef.name linkDef, Link linkDef)) (RoomDef.links roomDef)
+        items = fmap (\itemDef -> Item itemDef) (RoomDef.initialItems roomDef)
+    in
+        Room roomDef [] items links
 
 roomListToMap :: [RoomDef] -> Map.Map DefId Room
 roomListToMap roomDefs =
@@ -161,8 +166,8 @@ sendMessageRoomId actorId possiblyTargetId xtra message roomId world =
 internalLookRoom :: Room -> [Mob] -> Connection -> World -> Either String World
 internalLookRoom room mobs connection world =
     let
-        elements = [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (Map.keys $ links (def room))
-                   , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap (GameObj.sDesc) mobs)
+        elements = [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap LinkDef.name $ RoomDef.links (Room.def room))
+                   , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap GameObj.sDesc mobs)
                    , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap (GameObj.sDesc) (Room.items room))
                    ]
         text = foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
@@ -216,7 +221,7 @@ followLink userId linkId world =
         mob <- getPlayer userId world
         sourceRoom <- getRoom (locationId mob) world
         link <- findLink linkId sourceRoom
-        targetRoom <- getRoom (targetRoomId link) world
+        targetRoom <- getRoom (targetRoomId $ Link.def link) world
         updateWorld world [ updateRoom (removeMobId $ Mob.id mob) $ roomId sourceRoom
                           , updateRoom (addMobId $ Mob.id mob) $ (roomId targetRoom)
                           , sendMessageRoomId (Mob.id mob) Nothing "" exitMessage (roomId sourceRoom)

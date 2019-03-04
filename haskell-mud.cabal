@@ -24,3 +24,4 @@ executable haskell-mud
                      , text
                      , mtl
                      , wai-middleware-static
+                     , MissingH

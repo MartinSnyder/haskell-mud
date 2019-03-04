@@ -1,6 +1,7 @@
 module Link where
 
-import GameDef
+import LinkDef
+import GameObj
 
-data Link = Link { targetRoomId :: DefId
+data Link = Link { def :: LinkDef
                  } deriving (Show, Eq)
