@@ -9,7 +9,7 @@ import RoomDef
 import Link
 import Mob
 import Item
-import Match
+import Target
 
 data Room = Room { def :: RoomDef
                  , mobIds :: [MobId]
@@ -47,8 +47,8 @@ findLink linkId room =
         Just link -> Right link
         Nothing -> Left $  "Link " ++ linkId ++ " not found in room " ++ show (roomId room)
 
-findMatch :: String -> Room -> Match
-findMatch keyword room =
+findTarget :: String -> Room -> Target
+findTarget keyword room =
     case find (\item -> GameObj.matches item keyword) $ Room.items room of
-        Just item -> MatchItem item
-        Nothing -> NoMatch
+        Just item -> TargetItem item
+        Nothing -> TargetNone

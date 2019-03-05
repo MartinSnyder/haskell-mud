@@ -11,6 +11,7 @@ import Data.String.Utils (strip)
 import World
 import Message
 import PlayerData
+import Target
 
 data Command = Noop
              | Invalid String
@@ -68,11 +69,11 @@ applyCommand userId command world =
         Broadcast message ->
             sendBroadcastMessage message world
         Yell text ->
-            sendGlobalMessage userId Nothing text message world
-            where message = [Actor, ActorVerb "yell" "yells", Xtra True]
+            sendGlobalMessage userId TargetNone text message world
+            where message = [ActorDesc, ActorVerb "yell" "yells", Xtra True]
         Say text ->
-            sendLocalMessage userId Nothing text message world
-            where message = [Actor, ActorVerb "say" "says", Xtra True]
+            sendLocalMessage userId TargetNone text message world
+            where message = [ActorDesc, ActorVerb "say" "says", Xtra True]
         Go dir ->
             followLink userId dir world
         Look ->
