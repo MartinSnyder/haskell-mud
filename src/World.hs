@@ -199,7 +199,6 @@ getItem userId keyword world =
     do
         mob <- getPlayer userId world
         sourceRoom <- getRoom (locationId mob) world
-        currentItems <- return $ Mob.items mob
         item <- case findTargetRoom keyword sourceRoom of
             TargetItem item -> Right item
             _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
@@ -215,7 +214,6 @@ dropItem userId keyword world =
     do
         mob <- getPlayer userId world
         sourceRoom <- getRoom (locationId mob) world
-        currentItems <- return $ Mob.items mob
         item <- case findTargetMob keyword mob of
             TargetItem item -> Right item
             _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
