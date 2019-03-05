@@ -9,7 +9,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Text (pack)
 import Network.Wai.Middleware.Static
 
-import Command
+import CommandInterpreter
 import World
 
 newtype ServerState = ServerState { world :: IORef World }

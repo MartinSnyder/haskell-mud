@@ -10,6 +10,7 @@ import Connection
 import PlayerData
 import Room
 import Command
+import CommandInterpreter
 
 data Directive = Quit | Login UserId
 
