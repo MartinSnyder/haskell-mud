@@ -9,6 +9,7 @@ module World ( World
              , lookRoom
              , showInventory
              , getItem
+             , dropItem
              ) where
 
 import Data.List
@@ -199,15 +200,31 @@ getItem userId keyword world =
         mob <- getPlayer userId world
         sourceRoom <- getRoom (locationId mob) world
         currentItems <- return $ Mob.items mob
-        item <- case findTarget keyword sourceRoom of
+        item <- case findTargetRoom keyword sourceRoom of
             TargetItem item -> Right item
             _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
-        updateWorld world [ updateRoom (removeItem item) $ roomId sourceRoom
-                          , updateMob (\mob -> Right $ mob { Mob.items = item : currentItems }) (Mob.id mob)
+        updateWorld world [ updateRoom (Room.removeItem item) $ roomId sourceRoom
+                          , updateMob (Mob.addItem item) (Mob.id mob)
                           , sendMessageRoomId (Mob.id mob) (TargetItem item) "" message (roomId sourceRoom)
                           ]
     where
         message = [ActorDesc, ActorVerb "take" "takes", TargetDesc, Const "."]
+
+dropItem :: UserId -> String -> World -> Either String World
+dropItem userId keyword world =
+    do
+        mob <- getPlayer userId world
+        sourceRoom <- getRoom (locationId mob) world
+        currentItems <- return $ Mob.items mob
+        item <- case findTargetMob keyword mob of
+            TargetItem item -> Right item
+            _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
+        updateWorld world [ updateRoom (Room.addItem item) $ roomId sourceRoom
+                          , updateMob (Mob.removeItem item) (Mob.id mob)
+                          , sendMessageRoomId (Mob.id mob) (TargetItem item) "" message (roomId sourceRoom)
+                          ]
+    where
+        message = [ActorDesc, ActorVerb "drop" "drops", TargetDesc, Const "."]
 
 updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =

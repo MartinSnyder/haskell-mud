@@ -1,5 +1,7 @@
 module Mob where
 
+import Data.List (partition)
+
 import GameDef
 import GameObj
 import MobDef
@@ -25,3 +27,13 @@ instance GameObj Mob where
     matches mob keyword = case Mob.base mob of
         Left def -> GameDef.matches def keyword
         Right pd -> keyword == PlayerData.name pd
+
+addItem :: Item -> Mob -> Either String Mob
+addItem item mob =
+    Right $ mob { Mob.items = item : (Mob.items mob) }
+
+removeItem :: Item -> Mob -> Either String Mob
+removeItem item mob =
+    case partition (== item) (Mob.items mob) of
+        ([], _) -> Left $ "Item " ++ (GameObj.sDesc item) ++ " not found on mob " ++ show (Mob.id mob)
+        ([ foundItem ], remainingItems) -> Right $ mob { Mob.items = remainingItems }

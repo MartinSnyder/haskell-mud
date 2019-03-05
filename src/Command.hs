@@ -23,6 +23,7 @@ data Command = Noop
              | Look
              | Inventory
              | Get String
+             | Drop String
              deriving (Eq, Show)
 
 commandBuilders = Map.fromList [ ("help", \_ -> Help)
@@ -33,6 +34,7 @@ commandBuilders = Map.fromList [ ("help", \_ -> Help)
                                , ("look", \_ -> Look)
                                , ("inventory", \_ -> Inventory)
                                , ("get", \rest -> Get rest)
+                               , ("drop", \rest -> Drop rest)
                                ]
 
 parseCommand :: String -> Command
@@ -85,3 +87,8 @@ applyCommand userId command world =
                 Left $ "USAGE: get <keyword>"
             else
                 getItem userId keyword world
+        Drop keyword ->
+            if (keyword == "") then
+                Left $ "USAGE: drop <keyword>"
+            else
+                dropItem userId keyword world

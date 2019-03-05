@@ -9,7 +9,6 @@ import RoomDef
 import Link
 import Mob
 import Item
-import Target
 
 data Room = Room { def :: RoomDef
                  , mobIds :: [MobId]
@@ -35,6 +34,10 @@ removeMobId mobId room =
         ([], _) -> Left $ "Mob " ++ show mobId ++ " not found in room " ++ show (roomId room)
         ([ foundMobId ], remainingMobIds) -> Right $ room { mobIds = remainingMobIds }
 
+addItem :: Item -> Room -> Either String Room
+addItem item room =
+    Right $ room { Room.items = item : (Room.items room) }
+
 removeItem :: Item -> Room -> Either String Room
 removeItem item room =
     case List.partition (== item) (Room.items room) of
@@ -46,9 +49,3 @@ findLink linkId room =
     case Map.lookup linkId $ Room.links room of
         Just link -> Right link
         Nothing -> Left $  "Link " ++ linkId ++ " not found in room " ++ show (roomId room)
-
-findTarget :: String -> Room -> Target
-findTarget keyword room =
-    case find (\item -> GameObj.matches item keyword) $ Room.items room of
-        Just item -> TargetItem item
-        Nothing -> TargetNone
