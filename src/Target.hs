@@ -1,4 +1,9 @@
-module Target where
+module Target( Target(..)
+             , FindIn(..)
+             , FindType(..)
+             , findAllTypes
+             , findTarget
+             ) where
 
 import Data.List (find)
 import Data.Map (elems)
