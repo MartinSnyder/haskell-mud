@@ -56,10 +56,10 @@ applyCommand userId command world =
         Broadcast message ->
             sendBroadcastMessage message world
         Yell text ->
-            sendGlobalMessage userId TargetNone text message world
+            sendGlobalMessage userId TargetNone TargetNone text message world
             where message = [ActorDesc, ActorVerb "yell" "yells", Xtra True]
         Say text ->
-            sendLocalMessage userId TargetNone text message world
+            sendLocalMessage userId TargetNone TargetNone text message world
             where message = [ActorDesc, ActorVerb "say" "says", Xtra True]
         Go dir ->
             followLink userId dir world

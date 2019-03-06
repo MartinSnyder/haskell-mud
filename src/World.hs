@@ -140,8 +140,8 @@ routeMessage userId message world =
         connection <- getConnection userId world
         return world { connections = Map.insert userId (sendMessage message connection) $ World.connections world }
 
-sendMessageMobId :: Mob -> Target -> String -> Message -> MobId -> World -> Either String World
-sendMessageMobId actor target xtra message mobId world =
+sendMessageMobId :: Mob -> Target -> Target -> String -> Message -> MobId -> World -> Either String World
+sendMessageMobId actor target1 target2 xtra message mobId world =
     let
         maybeUserId = do
             mob <- Map.lookup mobId (mobs world)
@@ -149,20 +149,20 @@ sendMessageMobId actor target xtra message mobId world =
     in case maybeUserId of
         Just userId -> do
             connection <- getConnection userId world
-            routeMessage userId (resolveMessage actor target xtra message connection) world
+            routeMessage userId (resolveMessage actor target1 target2 xtra message connection) world
         Nothing ->
             Right world
 
-sendMessageRoom :: Mob -> Target -> String -> Message -> Room -> World -> Either String World
-sendMessageRoom actor target xtra message room world =
-    foldl (\ acc mob -> acc >>= sendMessageMobId actor target xtra message mob) (Right world) $ Room.mobIds room
+sendMessageRoom :: Mob -> Target -> Target -> String -> Message -> Room -> World -> Either String World
+sendMessageRoom actor target1 target2 xtra message room world =
+    foldl (\ acc mob -> acc >>= sendMessageMobId actor target1 target2 xtra message mob) (Right world) $ Room.mobIds room
 
-sendMessageRoomId :: MobId -> Target -> String -> Message -> DefId -> World -> Either String World
-sendMessageRoomId actorId target xtra message roomId world =
+sendMessageRoomId :: MobId -> Target -> Target -> String -> Message -> DefId -> World -> Either String World
+sendMessageRoomId actorId target1 target2 xtra message roomId world =
     do
         room <- getRoom roomId world
         actor <- getMob actorId world
-        sendMessageRoom actor target xtra message room world
+        sendMessageRoom actor target1 target2 xtra message room world
 
 internalLookRoom :: Room -> [Mob] -> Connection -> World -> Either String World
 internalLookRoom room mobs connection world =
@@ -204,10 +204,10 @@ getItem userId keyword world =
             _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
         updateWorld world [ updateRoom (Room.removeItem item) $ roomId sourceRoom
                           , updateMob (Mob.addItem item) (Mob.id mob)
-                          , sendMessageRoomId (Mob.id mob) (TargetItem item) "" message (roomId sourceRoom)
+                          , sendMessageRoomId (Mob.id mob) (TargetItem item) TargetNone "" message (roomId sourceRoom)
                           ]
     where
-        message = [ActorDesc, ActorVerb "take" "takes", TargetDesc, Const "."]
+        message = [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
 
 dropItem :: UserId -> String -> World -> Either String World
 dropItem userId keyword world =
@@ -219,10 +219,10 @@ dropItem userId keyword world =
             _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
         updateWorld world [ updateRoom (Room.addItem item) $ roomId sourceRoom
                           , updateMob (Mob.removeItem item) (Mob.id mob)
-                          , sendMessageRoomId (Mob.id mob) (TargetItem item) "" message (roomId sourceRoom)
+                          , sendMessageRoomId (Mob.id mob) (TargetItem item) TargetNone "" message (roomId sourceRoom)
                           ]
     where
-        message = [ActorDesc, ActorVerb "drop" "drops", TargetDesc, Const "."]
+        message = [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
 
 updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =
@@ -237,8 +237,8 @@ followLink userId linkId world =
         targetRoom <- getRoom (targetRoomId $ Link.def link) world
         updateWorld world [ updateRoom (removeMobId $ Mob.id mob) $ roomId sourceRoom
                           , updateRoom (addMobId $ Mob.id mob) $ (roomId targetRoom)
-                          , sendMessageRoomId (Mob.id mob) (TargetLink link) "" exitMessage (roomId sourceRoom)
-                          , sendMessageRoomId (Mob.id mob) (TargetLink link) (GameObj.sDesc targetRoom) enterMessage (roomId targetRoom)
+                          , sendMessageRoomId (Mob.id mob) (TargetLink link) TargetNone "" exitMessage (roomId sourceRoom)
+                          , sendMessageRoomId (Mob.id mob) (TargetLink link) TargetNone (GameObj.sDesc targetRoom) enterMessage (roomId targetRoom)
                           , updateMob (\mob -> Right $ mob { locationId = (roomId targetRoom)}) (Mob.id mob)
                           ]
     where
@@ -249,16 +249,16 @@ sendBroadcastMessage :: String -> World -> Either String World
 sendBroadcastMessage message world =
     return world { connections = Map.map (sendMessage message) $ World.connections world }
 
-sendGlobalMessage :: UserId -> Target -> String -> Message -> World -> Either String World
-sendGlobalMessage userId target xtra message world = do
+sendGlobalMessage :: UserId -> Target -> Target -> String -> Message -> World -> Either String World
+sendGlobalMessage userId target1 target2 xtra message world = do
     actor <- getPlayer userId world
-    return world { connections = Map.map (\ p -> sendMessage (resolveMessage actor target xtra message p) p) $ World.connections world }
+    return world { connections = Map.map (\ p -> sendMessage (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }
 
-sendLocalMessage :: UserId -> Target -> String -> Message -> World -> Either String World
-sendLocalMessage userId target xtra message world =
+sendLocalMessage :: UserId -> Target -> Target -> String -> Message -> World -> Either String World
+sendLocalMessage userId target1 target2 xtra message world =
     do
         actor <- getPlayer userId world
-        sendMessageRoomId (Mob.id actor) target xtra message (locationId actor) world
+        sendMessageRoomId (Mob.id actor) target1 target2 xtra message (locationId actor) world
 
 extractOutput :: UserId -> World -> (World, [String])
 extractOutput userId world =

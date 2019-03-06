@@ -11,36 +11,45 @@ import Target
 
 data Segment = ActorDesc
              | ActorPossessive
-             | TargetDesc
-             | TargetPossessive
-             | Xtra Bool
              | ActorVerb String String
-             | TargetVerb String String
+             | Target1Desc
+             | Target1Possessive
+             | Target1Verb String String
+             | Target2Desc
+             | Target2Possessive
+             | Target2Verb String String
+             | Xtra Bool
              | Const String
 type Message = [Segment]
 
-resolveMessage :: Mob -> Target -> String -> Message -> Connection -> String
-resolveMessage actor target xtra segments recipient =
-    upperFirst $ foldl (\ acc segment -> acc ++ (resolveSegment actor target xtra recipient segment)) "" segments
+resolveMessage :: Mob -> Target -> Target -> String -> Message -> Connection -> String
+resolveMessage actor target1 target2 xtra segments recipient =
+    upperFirst $ foldl (\ acc segment -> acc ++ (resolveSegment actor target1 target2 xtra recipient segment)) "" segments
 
-resolveSegment :: Mob -> Target -> String -> Connection -> Segment -> String
-resolveSegment _ _ _ _ (Const text) =
+resolveSegment :: Mob -> Target -> Target -> String -> Connection -> Segment -> String
+resolveSegment _ _ _ _ _ (Const text) =
     text
-resolveSegment _ _ xtra _ (Xtra quoted) =
+resolveSegment _ _ _ xtra _ (Xtra quoted) =
     if quoted then surroundWith "\"" xtra else xtra
-resolveSegment actor _ _ recipient ActorDesc =
+resolveSegment actor _ _ _ recipient ActorDesc =
     getMobText actor recipient False
-resolveSegment actor _ _ recipient ActorPossessive =
+resolveSegment actor _ _ _ recipient ActorPossessive =
     getMobText actor recipient True
-resolveSegment _ target _ recipient TargetDesc =
-    getTargetText target recipient False
-resolveSegment _ target _ recipient TargetPossessive =
-    getTargetText target recipient True
-resolveSegment actor _ _ recipient (ActorVerb second third) =
+resolveSegment actor _ _ _ recipient (ActorVerb second third) =
     surroundWith " " $ if mobIsRecipient actor recipient then second else third
-resolveSegment _ target _ recipient (TargetVerb second third) =
+resolveSegment _ target _ _ recipient Target1Desc =
+    getTargetText target recipient False
+resolveSegment _ target _ _ recipient Target1Possessive =
+    getTargetText target recipient True
+resolveSegment _ target _ _ recipient (Target1Verb second third) =
     surroundWith " " $ if targetIsRecipient target recipient then second else third
-
+resolveSegment _ _ target _ recipient Target2Desc =
+    getTargetText target recipient False
+resolveSegment _ _ target _ recipient Target2Possessive =
+    getTargetText target recipient True
+resolveSegment _ _ target _ recipient (Target2Verb second third) =
+    surroundWith " " $ if targetIsRecipient target recipient then second else third
+    
 getMobText :: Mob -> Connection -> Bool -> String
 getMobText mob recipient possessive =
     if mobIsRecipient mob recipient then "you" else GameObj.sDesc mob
