@@ -43,9 +43,3 @@ removeItem item room =
     case List.partition (== item) (Room.items room) of
         ([], _) -> Left $ "Item " ++ (GameObj.sDesc item) ++ " not found in room " ++ show (roomId room)
         ([ foundItem ], remainingItems) -> Right $ room { Room.items = remainingItems }
-
-findLink :: String -> Room -> Either String Link
-findLink linkId room =
-    case Map.lookup linkId $ Room.links room of
-        Just link -> Right link
-        Nothing -> Left $  "Link " ++ linkId ++ " not found in room " ++ show (roomId room)

@@ -197,14 +197,14 @@ showInventory userId world =
 getItem :: UserId -> String -> World -> Either String World
 getItem userId keyword world =
     do
-        mob <- getPlayer userId world
-        sourceRoom <- getRoom (locationId mob) world
-        item <- case findTargetRoom keyword sourceRoom of
+        actor <- getPlayer userId world
+        sourceRoom <- getRoom (locationId actor) world
+        item <- case findTarget FindInRoom [FindItem] keyword actor sourceRoom [] of
             TargetItem item -> Right item
             _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
         updateWorld world [ updateRoom (Room.removeItem item) $ roomId sourceRoom
-                          , updateMob (Mob.addItem item) (Mob.id mob)
-                          , sendMessageRoomId (Mob.id mob) (TargetItem item) TargetNone "" message (roomId sourceRoom)
+                          , updateMob (Mob.addItem item) (Mob.id actor)
+                          , sendMessageRoomId (Mob.id actor) (TargetItem item) TargetNone "" message (roomId sourceRoom)
                           ]
     where
         message = [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
@@ -212,14 +212,14 @@ getItem userId keyword world =
 dropItem :: UserId -> String -> World -> Either String World
 dropItem userId keyword world =
     do
-        mob <- getPlayer userId world
-        sourceRoom <- getRoom (locationId mob) world
-        item <- case findTargetMob keyword mob of
+        actor <- getPlayer userId world
+        sourceRoom <- getRoom (locationId actor) world
+        item <- case findTarget FindInActor findAllTypes keyword actor sourceRoom [] of
             TargetItem item -> Right item
             _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
         updateWorld world [ updateRoom (Room.addItem item) $ roomId sourceRoom
-                          , updateMob (Mob.removeItem item) (Mob.id mob)
-                          , sendMessageRoomId (Mob.id mob) (TargetItem item) TargetNone "" message (roomId sourceRoom)
+                          , updateMob (Mob.removeItem item) (Mob.id actor)
+                          , sendMessageRoomId (Mob.id actor) (TargetItem item) TargetNone "" message (roomId sourceRoom)
                           ]
     where
         message = [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
@@ -229,17 +229,19 @@ updateWorld world ops =
     foldl (\ acc op -> acc >>= op) (Right world) ops
 
 followLink :: UserId -> String -> World -> Either String World
-followLink userId linkId world =
+followLink userId keyword world =
     do
-        mob <- getPlayer userId world
-        sourceRoom <- getRoom (locationId mob) world
-        link <- findLink linkId sourceRoom
+        actor <- getPlayer userId world
+        sourceRoom <- getRoom (locationId actor) world
+        link <- case findTarget FindInRoom [FindLink] keyword actor sourceRoom [] of
+            TargetLink link -> Right link
+            _ -> Left $ "Can't find an exit called '" ++ keyword ++ ".'"
         targetRoom <- getRoom (targetRoomId $ Link.def link) world
-        updateWorld world [ updateRoom (removeMobId $ Mob.id mob) $ roomId sourceRoom
-                          , updateRoom (addMobId $ Mob.id mob) $ (roomId targetRoom)
-                          , sendMessageRoomId (Mob.id mob) (TargetLink link) TargetNone "" exitMessage (roomId sourceRoom)
-                          , sendMessageRoomId (Mob.id mob) (TargetLink link) TargetNone (GameObj.sDesc targetRoom) enterMessage (roomId targetRoom)
-                          , updateMob (\mob -> Right $ mob { locationId = (roomId targetRoom)}) (Mob.id mob)
+        updateWorld world [ updateRoom (removeMobId $ Mob.id actor) $ roomId sourceRoom
+                          , updateRoom (addMobId $ Mob.id actor) $ (roomId targetRoom)
+                          , sendMessageRoomId (Mob.id actor) (TargetLink link) TargetNone "" exitMessage (roomId sourceRoom)
+                          , sendMessageRoomId (Mob.id actor) (TargetLink link) TargetNone (GameObj.sDesc targetRoom) enterMessage (roomId targetRoom)
+                          , updateMob (\mob -> Right $ mob { locationId = (roomId targetRoom)}) (Mob.id actor)
                           ]
     where
         exitMessage = [ActorDesc, ActorVerb "leave" "left", Const "the room."]
