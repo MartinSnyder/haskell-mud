@@ -15,7 +15,7 @@ data Target = TargetNone
             | TargetLink Link
             deriving (Eq)
 
-data FindIn = FindInRoom | FindInActor
+data FindIn = FindInRoom | FindInActor | FindNowhere
 
 data FindType = FindItem | FindMob | FindLink
 
@@ -46,3 +46,4 @@ findTargetSingleType findIn findType keyword actor room roomMobs =
         FindInActor -> case findType of
             FindItem -> findInList keyword TargetItem $ Mob.items actor
             _ -> TargetNone
+        FindNowhere -> TargetNone
