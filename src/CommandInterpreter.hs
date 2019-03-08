@@ -8,9 +8,22 @@ import Data.Char (toLower)
 import Data.String.Utils (strip)
 
 import World
+import Mob
+import Room
 import Message
 import PlayerData
 import Target
+
+getCommand = CommandEntry "get"
+                (Just (FindInRoom, [FindItem]))
+                (Just (FindNowhere, []))
+                (\ cmd world -> do
+                    item <- asItem $ target1 cmd
+                    updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room cmd
+                                      , updateMob (Mob.addItem item) $ Mob.id $ actor cmd
+                                      , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
+                                      ]
+                )
 
 commandBuilders = Map.fromList [ ("help", \_ -> Help)
                                , ("broadcast", \rest -> Broadcast rest)
@@ -68,10 +81,7 @@ applyCommand userId command world =
         Inventory ->
             showInventory userId world
         Get keyword ->
-            if (keyword == "") then
-                Left $ "USAGE: get <keyword>"
-            else
-                getItem userId keyword world
+            doCommand userId getCommand keyword "" "" world
         Drop keyword ->
             if (keyword == "") then
                 Left $ "USAGE: drop <keyword>"

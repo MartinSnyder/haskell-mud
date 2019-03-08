@@ -1,4 +1,7 @@
 module World ( World
+             , MessageDestination(..)
+             , CommandPayload(..)
+             , CommandEntry(..)
              , buildWorld
              , extractOutput
              , addPlayerIfAbsent
@@ -6,15 +9,21 @@ module World ( World
              , sendBroadcastMessage
              , sendGlobalMessage
              , sendLocalMessage
+             , sendMessageTo
              , lookRoom
+             , doCommand
              , showInventory
              , getItem
              , dropItem
+             , updateRoom
+             , updateMob
+             , updateWorld
              ) where
 
 import Data.List
 import qualified Data.Map as Map
 import Data.Char (toLower)
+import Data.Maybe (fromMaybe)
 
 import GameDef
 import MobDef
@@ -30,6 +39,21 @@ import Item
 import Connection
 import Message
 import Target
+
+data MessageDestination = MsgGlobal | MsgRoom | MsgSpecificRoom DefId
+
+data CommandPayload = CommandPayload { actor :: Mob
+                                     , room :: Room
+                                     , target1 :: Target
+                                     , target2 :: Target
+                                     , xtra :: String
+                                     }
+
+data CommandEntry = CommandEntry { name :: String
+                                 , target1Spec :: Maybe (FindIn, [FindType])
+                                 , target2Spec :: Maybe (FindIn, [FindType])
+                                 , execute :: CommandPayload -> World -> Either String World
+                                 }
 
 data World = World { nextMobId :: MobId
                    , entryRoomId :: DefId
@@ -122,6 +146,7 @@ mobIdsToMobs mobIds world =
                                         acc <- accEither
                                         mob <- getMob id world
                                         return $ mob : acc
+
 updateRoom :: (Room -> Either String Room) -> DefId -> World -> Either String World
 updateRoom f roomId world = do
     room <- getRoom roomId world
@@ -184,6 +209,20 @@ lookRoom userId world =
         room <- getRoom (locationId mob) world
         mobs <- mobIdsToMobs (mobIds room) world
         internalLookRoom room mobs connection world
+
+resolveTarget :: Maybe (FindIn, [FindType]) -> String -> Mob -> Room -> [Mob] -> Target
+resolveTarget targetSpec keyword actor room roomMobs =
+    fromMaybe TargetNone $ fmap (\(findIn, findTypes) -> findTarget findIn findTypes keyword actor room roomMobs) targetSpec
+
+doCommand :: UserId -> CommandEntry -> String -> String -> String -> World -> Either String World
+doCommand userId command keyword1 keyword2 xtra world =
+    do
+        actor <- getPlayer userId world
+        room <- getRoom (locationId actor) world
+        mobs <- mobIdsToMobs (mobIds room) world
+        target1 <- return $ resolveTarget (target1Spec command) keyword1 actor room mobs
+        target2 <- return $ resolveTarget (target2Spec command) keyword2 actor room mobs
+        (execute command) (CommandPayload actor room target1 target2 xtra) world
 
 showInventory :: UserId -> World -> Either String World
 showInventory userId world =
@@ -261,6 +300,16 @@ sendLocalMessage userId target1 target2 xtra message world =
     do
         actor <- getPlayer userId world
         sendMessageRoomId (Mob.id actor) target1 target2 xtra message (locationId actor) world
+
+sendMessageTo :: CommandPayload -> MessageDestination -> Message -> World -> Either String World
+sendMessageTo (CommandPayload actor room target1 target2 xtra) msgDest message world =
+    case msgDest of
+        MsgGlobal ->
+            Right $ world { connections = Map.map (\ p -> sendMessage (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }
+        MsgRoom ->
+            sendMessageRoomId (Mob.id actor) target1 target2 xtra message (locationId actor) world
+        MsgSpecificRoom targetRoomId ->
+            sendMessageRoomId (Mob.id actor) target1 target2 xtra message targetRoomId world
 
 extractOutput :: UserId -> World -> (World, [String])
 extractOutput userId world =
