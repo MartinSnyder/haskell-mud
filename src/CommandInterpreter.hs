@@ -1,6 +1,4 @@
-module CommandInterpreter (parseCommand, applyCommand) where
-
-import Command
+module CommandInterpreter (Command, parseCommand, applyCommand) where
 
 import Data.List (elemIndex, take, drop, sort)
 import qualified Data.Map as Map
@@ -14,9 +12,38 @@ import Message
 import PlayerData
 import Target
 
-getCommand = CommandEntry "get"
-                (Just (FindInRoom, [FindItem]))
-                (Just (FindNowhere, []))
+data Command = Noop
+             | Invalid String
+             | Help
+             | Broadcast String
+             | Yell String
+             | Say String
+             | Go String
+             | Look
+             | Inventory
+             | Get String
+             | Drop String
+             | ExecuteCommand CommandEntry String String String
+
+getCommand = CommandEntry "get" (Just (FindInRoom, [FindItem])) Nothing
+                (\ cmd world -> do
+                    item <- asItem $ target1 cmd
+                    updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room cmd
+                                    , updateMob (Mob.addItem item) $ Mob.id $ actor cmd
+                                    , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
+                                    ]
+                )
+
+dropCommand = CommandEntry "drop" (Just (FindInActor, [FindItem])) Nothing
+                (\ cmd world -> do
+                    item <- asItem $ target1 cmd
+                    updateWorld world [ updateRoom (Room.addItem item) $ roomId $ room cmd
+                                    , updateMob (Mob.removeItem item) $ Mob.id $ actor cmd
+                                    , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
+                                    ]
+                )
+
+commands = [ CommandEntry "get" (Just (FindInRoom, [FindItem])) Nothing
                 (\ cmd world -> do
                     item <- asItem $ target1 cmd
                     updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room cmd
@@ -24,6 +51,15 @@ getCommand = CommandEntry "get"
                                       , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
                                       ]
                 )
+           , CommandEntry "drop" (Just (FindInActor, [FindItem])) Nothing
+                (\ cmd world -> do
+                    item <- asItem $ target1 cmd
+                    updateWorld world [ updateRoom (Room.addItem item) $ roomId $ room cmd
+                                      , updateMob (Mob.removeItem item) $ Mob.id $ actor cmd
+                                      , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
+                                      ]
+                )
+           ]
 
 commandBuilders = Map.fromList [ ("help", \_ -> Help)
                                , ("broadcast", \rest -> Broadcast rest)
@@ -83,7 +119,6 @@ applyCommand userId command world =
         Get keyword ->
             doCommand userId getCommand keyword "" "" world
         Drop keyword ->
-            if (keyword == "") then
-                Left $ "USAGE: drop <keyword>"
-            else
-                dropItem userId keyword world
+            doCommand userId dropCommand keyword "" "" world
+        ExecuteCommand cmdEnty keyword1 keyword2 extra ->
+            doCommand userId cmdEnty keyword1 keyword2 extra world

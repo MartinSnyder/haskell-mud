@@ -9,7 +9,6 @@ import World (World, buildWorld, addPlayerIfAbsent, extractOutput)
 import Connection
 import PlayerData
 import Room
-import Command
 import CommandInterpreter
 
 data Directive = Quit | Login UserId

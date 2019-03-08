@@ -13,8 +13,6 @@ module World ( World
              , lookRoom
              , doCommand
              , showInventory
-             , getItem
-             , dropItem
              , updateRoom
              , updateMob
              , updateWorld
@@ -232,36 +230,6 @@ showInventory userId world =
         text <- return $ foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items mob))
         nextConnection <- return $ sendMessage text connection
         Right world { connections = Map.insert (Connection.userId nextConnection) nextConnection $ World.connections world }
-
-getItem :: UserId -> String -> World -> Either String World
-getItem userId keyword world =
-    do
-        actor <- getPlayer userId world
-        sourceRoom <- getRoom (locationId actor) world
-        item <- case findTarget FindInRoom [FindItem] keyword actor sourceRoom [] of
-            TargetItem item -> Right item
-            _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
-        updateWorld world [ updateRoom (Room.removeItem item) $ roomId sourceRoom
-                          , updateMob (Mob.addItem item) (Mob.id actor)
-                          , sendMessageRoomId (Mob.id actor) (TargetItem item) TargetNone "" message (roomId sourceRoom)
-                          ]
-    where
-        message = [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
-
-dropItem :: UserId -> String -> World -> Either String World
-dropItem userId keyword world =
-    do
-        actor <- getPlayer userId world
-        sourceRoom <- getRoom (locationId actor) world
-        item <- case findTarget FindInActor findAllTypes keyword actor sourceRoom [] of
-            TargetItem item -> Right item
-            _ -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
-        updateWorld world [ updateRoom (Room.addItem item) $ roomId sourceRoom
-                          , updateMob (Mob.removeItem item) (Mob.id actor)
-                          , sendMessageRoomId (Mob.id actor) (TargetItem item) TargetNone "" message (roomId sourceRoom)
-                          ]
-    where
-        message = [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
 
 updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =
