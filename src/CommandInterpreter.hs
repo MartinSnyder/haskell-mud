@@ -22,7 +22,7 @@ data Command = Noop
 
 commandList = [ CommandEntry "help" Nothing Nothing
                     (\ _ _ ->
-                        let commands = sort $ Map.keys commandBuilders
+                        let commands = sort $ map World.name commandList
                         in  Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
                     )
               , CommandEntry "go" (Just (FindInRoom, [FindLink])) Nothing
@@ -81,16 +81,6 @@ commandList = [ CommandEntry "help" Nothing Nothing
 
 commandMap = Map.fromList $ map (\cmd -> (World.name cmd, cmd)) commandList
 
-commandBuilders = Map.fromList [ ("help", \_ -> parseCommand2 $ "help")
-                               , ("yell", \rest -> parseCommand2 $ "yell " ++ rest)
-                               , ("say", \rest -> parseCommand2 $ "say " ++ rest)
-                               , ("go", \rest -> parseCommand2 $ "go " ++ rest)
-                               , ("look", \_ -> parseCommand2 $ "look")
-                               , ("inventory", \_ -> parseCommand2 $ "inventory")
-                               , ("get", \rest -> parseCommand2 $ "get " ++ rest)
-                               , ("drop", \rest -> parseCommand2 $ "drop " ++ rest)
-                               ]
-
 buildCommand :: CommandEntry -> String -> Command
 buildCommand command rest =
     let
@@ -104,9 +94,9 @@ buildCommand command rest =
     in
         ExecuteCommand command keyword1 keyword2 rest''
 
-parseCommand2 :: String -> Command
-parseCommand2 "" = Noop
-parseCommand2 line =
+parseCommand :: String -> Command
+parseCommand "" = Noop
+parseCommand line =
     let
         -- Important: This is the entry point for all input. Before even looking at it, we:
         -- 1. Convert to lowercase AND
@@ -118,18 +108,6 @@ parseCommand2 line =
             Nothing -> case find (\cmd -> startswith firstWord $ World.name cmd) commandList of
                 Just command -> buildCommand command rest
                 Nothing -> Invalid line
-
-parseCommand :: String -> Command
-parseCommand "" = Noop
-parseCommand line =
-    let
-        -- Important: This is the entry point for all input. Before even looking at it, we:
-        -- 1. Convert to lowercase AND
-        -- 2. Strip boundary whitespace
-        (firstWord, rest) = getFirstWord . strip $ map toLower line
-    in case Map.lookup firstWord commandBuilders of
-        Just builder -> builder $ rest
-        Nothing -> Invalid line
 
 getFirstWord :: String -> (String, String)
 getFirstWord line = case firstSpace of
