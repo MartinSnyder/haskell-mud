@@ -3,16 +3,15 @@ module World ( World
              , CommandPayload(..)
              , CommandEntry(..)
              , buildWorld
-             , extractOutput
              , addPlayerIfAbsent
-             , sendBroadcastMessage
-             , sendMessageTo
-             , lookRoom
+             , lookRoom -- remove
+             , showInventory -- remove
              , doCommand
-             , showInventory
              , updateRoom
              , updateMob
              , updateWorld
+             , sendMessageTo
+             , extractOutput
              ) where
 
 import Data.List
@@ -109,7 +108,7 @@ addPlayerIfAbsent userId world =
             playerData <- Right $ PlayerData userId userId
             (mob, nextWorld) <- addMob (Right playerData) (entryRoomId world) (Just userId) world
             (connection, nextWorld') <- addConnection userId (Mob.id mob) nextWorld
-            sendBroadcastMessage ((GameObj.sDesc mob) ++ " has entered the game") nextWorld'
+            broadcastText ((GameObj.sDesc mob) ++ " has entered the game") nextWorld'
 
 getPlayer :: UserId -> World -> Either String Mob
 getPlayer userId world = do
@@ -134,6 +133,8 @@ getMob mobId world =
         Just mob -> Right mob
         Nothing -> Left $ "Cannot find mob " ++ show mobId
 
+-- TODO: getMobsForRoom
+
 mobIdsToMobs :: [MobId] -> World -> Either String [Mob]
 mobIdsToMobs mobIds world =
     foldr (folder world) (Right []) mobIds
@@ -154,35 +155,9 @@ updateMob f mobId world = do
     nextMob <- f mob
     Right world { mobs = Map.insert (Mob.id nextMob) nextMob (mobs world) }
 
-routeMessage :: UserId -> String -> World -> Either String World
-routeMessage userId message world =
-    do
-        connection <- getConnection userId world
-        return world { connections = Map.insert userId (sendMessage message connection) $ World.connections world }
-
-sendMessageMobId :: Mob -> Target -> Target -> String -> Message -> MobId -> World -> Either String World
-sendMessageMobId actor target1 target2 xtra message mobId world =
-    let
-        maybeUserId = do
-            mob <- Map.lookup mobId (mobs world)
-            connectionId mob
-    in case maybeUserId of
-        Just userId -> do
-            connection <- getConnection userId world
-            routeMessage userId (resolveMessage actor target1 target2 xtra message connection) world
-        Nothing ->
-            Right world
-
-sendMessageRoom :: Mob -> Target -> Target -> String -> Message -> Room -> World -> Either String World
-sendMessageRoom actor target1 target2 xtra message room world =
-    foldl (\ acc mob -> acc >>= sendMessageMobId actor target1 target2 xtra message mob) (Right world) $ Room.mobIds room
-
-sendMessageRoomId :: MobId -> Target -> Target -> String -> Message -> DefId -> World -> Either String World
-sendMessageRoomId actorId target1 target2 xtra message roomId world =
-    do
-        room <- getRoom roomId world
-        actor <- getMob actorId world
-        sendMessageRoom actor target1 target2 xtra message room world
+updateWorld :: World -> [(World -> Either String World)] -> Either String World
+updateWorld world ops =
+    foldl (\ acc op -> acc >>= op) (Right world) ops
 
 internalLookRoom :: Room -> [Mob] -> Connection -> World -> Either String World
 internalLookRoom room mobs connection world =
@@ -192,7 +167,7 @@ internalLookRoom room mobs connection world =
                    , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap (GameObj.sDesc) (Room.items room))
                    ]
         text = foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
-        nextConnection = sendMessage text connection
+        nextConnection = sendText text connection
     in
         Right world { connections = Map.insert (Connection.userId nextConnection) nextConnection $ World.connections world }
 
@@ -225,35 +200,87 @@ showInventory userId world =
         connection <- getConnection userId world
         mob <- getPlayer userId world
         text <- return $ foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items mob))
-        nextConnection <- return $ sendMessage text connection
+        nextConnection <- return $ sendText text connection
         Right world { connections = Map.insert (Connection.userId nextConnection) nextConnection $ World.connections world }
 
-updateWorld :: World -> [(World -> Either String World)] -> Either String World
-updateWorld world ops =
-    foldl (\ acc op -> acc >>= op) (Right world) ops
+--------------------------
+-- Routing text to players
+--------------------------
 
-sendBroadcastMessage :: String -> World -> Either String World
-sendBroadcastMessage message world =
-    return world { connections = Map.map (sendMessage message) $ World.connections world }
+getMobUserId :: MobId -> World -> Maybe UserId
+getMobUserId mobId world =
+    do
+        mob <- Map.lookup mobId (mobs world)
+        connectionId mob
+
+sendTextUser :: UserId -> String -> World -> Either String World
+sendTextUser userId text world =
+    do
+        connection <- getConnection userId world
+        return world { connections = Map.insert userId (sendText text connection) $ World.connections world }
+
+sendTextMobId :: MobId -> String -> World -> Either String World
+sendTextMobId mobId text world =
+    case getMobUserId mobId world of
+        Just userId ->
+            sendTextUser userId text world
+        Nothing ->
+            Right world
+
+broadcastText :: String -> World -> Either String World
+broadcastText message world =
+    return world { connections = Map.map (sendText message) $ World.connections world }
+    
+-----------------------------
+-- Formatted messaging system
+-----------------------------
+
+sendMessageMobId :: Mob -> Target -> Target -> String -> Message -> MobId -> World -> Either String World
+sendMessageMobId actor target1 target2 xtra message mobId world =
+    let
+        maybeUserId = do
+            mob <- Map.lookup mobId (mobs world)
+            connectionId mob
+    in case maybeUserId of
+        Just userId -> do
+            connection <- getConnection userId world
+            sendTextUser userId (resolveMessage actor target1 target2 xtra message connection) world
+        Nothing ->
+            Right world
+
+sendMessageRoom :: Mob -> Target -> Target -> String -> Message -> Room -> World -> Either String World
+sendMessageRoom actor target1 target2 xtra message room world =
+    foldl (\ acc mob -> acc >>= sendMessageMobId actor target1 target2 xtra message mob) (Right world) $ Room.mobIds room
+
+sendMessageRoomId :: MobId -> Target -> Target -> String -> Message -> DefId -> World -> Either String World
+sendMessageRoomId actorId target1 target2 xtra message roomId world =
+    do
+        room <- getRoom roomId world
+        actor <- getMob actorId world
+        sendMessageRoom actor target1 target2 xtra message room world
 
 sendMessageTo :: CommandPayload -> MessageDestination -> Message -> World -> Either String World
 sendMessageTo (CommandPayload actor room target1 target2 xtra) msgDest message world =
     case msgDest of
         MsgGlobal ->
-            Right $ world { connections = Map.map (\ p -> sendMessage (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }
+            Right $ world { connections = Map.map (\ p -> sendText (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }
         MsgRoom ->
             sendMessageRoomId (Mob.id actor) target1 target2 xtra message (locationId actor) world
         MsgSpecificRoom targetRoomId ->
             sendMessageRoomId (Mob.id actor) target1 target2 xtra message targetRoomId world
+
+-----------------------------
+-- Retrieving output for players
+-----------------------------
 
 extractOutput :: UserId -> World -> (World, [String])
 extractOutput userId world =
     case Map.lookup userId (World.connections world) of
         Just connection ->
             let
-                messages = reverse . Connection.messages $ connection
-                nextConnection = connection { messages = [] }
+                userOutput = reverse . output $ connection
+                nextConnection = connection { output = [] }
                 nextWorld = world { connections = Map.insert userId nextConnection (World.connections world)}
-            in (nextWorld, messages)
+            in (nextWorld, userOutput)
         Nothing ->
             (world, [])
