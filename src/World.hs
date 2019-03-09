@@ -1,6 +1,6 @@
 module World ( World
              , MessageDestination(..)
-             , CommandPayload(..)
+             , CommandArguments(..)
              , CommandEntry(..)
              , buildWorld
              , addPlayerIfAbsent
@@ -36,17 +36,17 @@ import Target
 
 data MessageDestination = MsgGlobal | MsgRoom | MsgSpecificRoom DefId
 
-data CommandPayload = CommandPayload { actor :: Mob
-                                     , room :: Room
-                                     , target1 :: Target
-                                     , target2 :: Target
-                                     , xtra :: String
-                                     }
+data CommandArguments = CommandArguments { actor :: Mob
+                                         , room :: Room
+                                         , target1 :: Target
+                                        , target2 :: Target
+                                         , xtra :: String
+                                         }
 
 data CommandEntry = CommandEntry { name :: String
                                  , target1Spec :: Maybe (FindIn, [FindType])
                                  , target2Spec :: Maybe (FindIn, [FindType])
-                                 , execute :: CommandPayload -> World -> Either String World
+                                 , execute :: CommandArguments -> World -> Either String World
                                  }
 
 data World = World { nextMobId :: MobId
@@ -169,7 +169,7 @@ doCommand userId command keyword1 keyword2 xtra world =
         mobs <- mobIdsToMobs (mobIds room) world
         target1 <- return $ resolveTarget (target1Spec command) keyword1 actor room mobs
         target2 <- return $ resolveTarget (target2Spec command) keyword2 actor room mobs
-        (execute command) (CommandPayload actor room target1 target2 xtra) world
+        (execute command) (CommandArguments actor room target1 target2 xtra) world
 
 internalLookRoom :: UserId -> Room -> [Mob] -> World -> Either String World
 internalLookRoom userId room mobs world =
@@ -243,8 +243,8 @@ sendMessageRoom :: Mob -> Target -> Target -> String -> Message -> Room -> World
 sendMessageRoom actor target1 target2 xtra message room world =
     foldl (\ acc mob -> acc >>= sendMessageMobId actor target1 target2 xtra message mob) (Right world) $ Room.mobIds room
 
-sendMessageTo :: CommandPayload -> MessageDestination -> Message -> World -> Either String World
-sendMessageTo (CommandPayload actor room target1 target2 xtra) msgDest message world =
+sendMessageTo :: CommandArguments -> MessageDestination -> Message -> World -> Either String World
+sendMessageTo (CommandArguments actor room target1 target2 xtra) msgDest message world =
     case msgDest of
         MsgGlobal ->
             Right $ world { connections = Map.map (\ p -> sendText (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }

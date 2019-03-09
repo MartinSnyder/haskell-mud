@@ -22,46 +22,46 @@ data Command = Noop
              | ExecuteCommand CommandEntry String String String
 
 commandList = [ CommandEntry "help" Nothing Nothing
-                    (\ cmd world ->
+                    (\ _ _ ->
                         let
                             commands = sort $ Map.keys commandBuilders
                         in
                             Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
                     )
               , CommandEntry "go" (Just (FindInRoom, [FindLink])) Nothing
-                    (\ cmd world -> do
-                        link <- asLink $ target1 cmd
+                    (\ args world -> do
+                        link <- asLink $ target1 args
                         destinationRoomId <- return $ targetRoomId $ Link.def link
-                        updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor cmd) $ roomId $ room cmd
-                                          , updateRoom (addMobId $ Mob.id $ actor cmd) $ destinationRoomId
-                                          , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "leave" "left", Const "the room."]
-                                          , sendMessageTo cmd (MsgSpecificRoom destinationRoomId) [ActorDesc, ActorVerb "enter" "enters", Xtra False, Const "."]
-                                          , updateMob (\mob -> Right $ mob { locationId = destinationRoomId }) $ Mob.id $ actor cmd
+                        updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor args) $ roomId $ room args
+                                          , updateRoom (addMobId $ Mob.id $ actor args) $ destinationRoomId
+                                          , sendMessageTo args MsgRoom [ActorDesc, ActorVerb "leave" "left", Const "the room."]
+                                          , sendMessageTo args (MsgSpecificRoom destinationRoomId) [ActorDesc, ActorVerb "enter" "enters", Xtra False, Const "."]
+                                          , updateMob (\mob -> Right $ mob { locationId = destinationRoomId }) $ Mob.id $ actor args
                                           ]
               )
               , CommandEntry "get" (Just (FindInRoom, [FindItem])) Nothing
-                    (\ cmd world -> do
-                        item <- asItem $ target1 cmd
-                        updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room cmd
-                                          , updateMob (Mob.addItem item) $ Mob.id $ actor cmd
-                                          , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
+                    (\ args world -> do
+                        item <- asItem $ target1 args
+                        updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room args
+                                          , updateMob (Mob.addItem item) $ Mob.id $ actor args
+                                          , sendMessageTo args MsgRoom [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
                                           ]
                     )
               , CommandEntry "drop" (Just (FindInActor, [FindItem])) Nothing
-                    (\ cmd world -> do
-                        item <- asItem $ target1 cmd
-                        updateWorld world [ updateRoom (Room.addItem item) $ roomId $ room cmd
-                                          , updateMob (Mob.removeItem item) $ Mob.id $ actor cmd
-                                          , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
+                    (\ args world -> do
+                        item <- asItem $ target1 args
+                        updateWorld world [ updateRoom (Room.addItem item) $ roomId $ room args
+                                          , updateMob (Mob.removeItem item) $ Mob.id $ actor args
+                                          , sendMessageTo args MsgRoom [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
                                           ]
                     )
               , CommandEntry "say" Nothing Nothing
-                    (\ cmd world ->
-                        updateWorld world [ sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "say" "says", Xtra True] ]
+                    (\ args world ->
+                        updateWorld world [ sendMessageTo args MsgRoom [ActorDesc, ActorVerb "say" "says", Xtra True] ]
                     )
               , CommandEntry "yell" Nothing Nothing
-                    (\ cmd world ->
-                        updateWorld world [ sendMessageTo cmd MsgGlobal [ActorDesc, ActorVerb "yell" "yells", Xtra True] ]
+                    (\ args world ->
+                        updateWorld world [ sendMessageTo args MsgGlobal [ActorDesc, ActorVerb "yell" "yells", Xtra True] ]
                     )
               ]
 
@@ -134,5 +134,5 @@ applyCommand userId command world =
             lookRoom userId world
         Inventory ->
             showInventory userId world
-        ExecuteCommand cmdEnty keyword1 keyword2 extra ->
-            doCommand userId cmdEnty keyword1 keyword2 extra world
+        ExecuteCommand cmdEntry keyword1 keyword2 extra ->
+            doCommand userId cmdEntry keyword1 keyword2 extra world
