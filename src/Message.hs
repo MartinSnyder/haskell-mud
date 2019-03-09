@@ -58,6 +58,7 @@ getTargetText :: Target -> Connection -> Bool -> String
 getTargetText target recipient possessive =
     case target of
         TargetNone -> error "Target specified but not supplied for message"
+        TargetNotFound keyword -> "Could not find anything matching '" ++ keyword ++ ".'"
         TargetLink link -> GameObj.sDesc link
         TargetItem item -> GameObj.sDesc item
         TargetMob mob -> getMobText mob recipient possessive
