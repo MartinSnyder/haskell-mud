@@ -5,11 +5,11 @@ module World ( World
              , buildWorld
              , addPlayerIfAbsent
              , lookRoom -- remove
-             , showInventory -- remove
              , doCommand
              , updateRoom
              , updateMob
              , updateWorld
+             , sendTextMob
              , sendMessageTo
              , extractOutput
              ) where
@@ -190,14 +190,6 @@ lookRoom userId world =
         mobs <- mobIdsToMobs (mobIds room) world
         internalLookRoom userId room mobs world
 
-showInventory :: UserId -> World -> Either String World
-showInventory userId world =
-    do
-        connection <- getConnection userId world
-        mob <- getPlayer userId world
-        text <- return $ foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items mob))
-        sendTextUser userId text world
-
 --------------------------
 -- Routing text to players
 --------------------------
@@ -214,9 +206,9 @@ sendTextUser userId text world =
         connection <- getConnection userId world
         return world { connections = Map.insert userId (sendText text connection) $ World.connections world }
 
-sendTextMobId :: MobId -> String -> World -> Either String World
-sendTextMobId mobId text world =
-    case getMobUserId mobId world of
+sendTextMob :: Mob -> String -> World -> Either String World
+sendTextMob mob text world =
+    case getMobUserId (Mob.id mob) world of
         Just userId ->
             sendTextUser userId text world
         Nothing ->

@@ -9,6 +9,7 @@ import World
 import Mob
 import Link
 import LinkDef
+import GameObj
 import Room
 import Message
 import PlayerData
@@ -16,9 +17,7 @@ import Target
 
 data Command = Noop
              | Invalid String
-             | Go String
              | Look
-             | Inventory
              | ExecuteCommand CommandEntry String String String
 
 commandList = [ CommandEntry "help" Nothing Nothing
@@ -59,6 +58,11 @@ commandList = [ CommandEntry "help" Nothing Nothing
                     (\ args world ->
                         updateWorld world [ sendMessageTo args MsgRoom [ActorDesc, ActorVerb "say" "says", Xtra True] ]
                     )
+              , CommandEntry "inventory" Nothing Nothing
+                    (\ args world -> do
+                        text <- return $ foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items $ actor args))
+                        updateWorld world [ sendTextMob (actor args) text ]
+                    )
               , CommandEntry "yell" Nothing Nothing
                     (\ args world ->
                         updateWorld world [ sendMessageTo args MsgGlobal [ActorDesc, ActorVerb "yell" "yells", Xtra True] ]
@@ -72,7 +76,7 @@ commandBuilders = Map.fromList [ ("help", \_ -> parseCommand2 $ "help")
                                , ("say", \rest -> parseCommand2 $ "say " ++ rest)
                                , ("go", \rest -> parseCommand2 $ "go " ++ rest)
                                , ("look", \_ -> Look)
-                               , ("inventory", \_ -> Inventory)
+                               , ("inventory", \_ -> parseCommand2 $ "inventory")
                                , ("get", \rest -> parseCommand2 $ "get " ++ rest)
                                , ("drop", \rest -> parseCommand2 $ "drop " ++ rest)
                                ]
@@ -132,7 +136,5 @@ applyCommand userId command world =
             Left $ "Invalid input: " ++ text
         Look ->
             lookRoom userId world
-        Inventory ->
-            showInventory userId world
         ExecuteCommand cmdEntry keyword1 keyword2 extra ->
             doCommand userId cmdEntry keyword1 keyword2 extra world
