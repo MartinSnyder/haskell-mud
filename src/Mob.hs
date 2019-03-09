@@ -1,6 +1,7 @@
 module Mob where
 
 import Data.List (partition)
+import Data.Char (toLower)
 
 import GameDef
 import GameObj
@@ -26,7 +27,7 @@ instance GameObj Mob where
         Right pd -> "A player named " ++ PlayerData.name pd
     matches mob keyword = case Mob.base mob of
         Left def -> GameDef.matches def keyword
-        Right pd -> keyword == PlayerData.name pd
+        Right pd -> keyword == (map toLower $ PlayerData.name pd)
 
 addItem :: Item -> Mob -> Either String Mob
 addItem item mob =

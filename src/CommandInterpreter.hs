@@ -1,12 +1,14 @@
 module CommandInterpreter (Command, parseCommand, applyCommand) where
 
-import Data.List (elemIndex, take, drop, sort)
+import Data.List (elemIndex, take, drop, sort, find)
 import qualified Data.Map as Map
 import Data.Char (toLower)
-import Data.String.Utils (strip)
+import Data.String.Utils (strip, startswith)
 
 import World
 import Mob
+import Link
+import LinkDef
 import Room
 import Message
 import PlayerData
@@ -14,63 +16,94 @@ import Target
 
 data Command = Noop
              | Invalid String
-             | Help
-             | Broadcast String
-             | Yell String
-             | Say String
              | Go String
              | Look
              | Inventory
-             | Get String
-             | Drop String
              | ExecuteCommand CommandEntry String String String
 
-getCommand = CommandEntry "get" (Just (FindInRoom, [FindItem])) Nothing
-                (\ cmd world -> do
-                    item <- asItem $ target1 cmd
-                    updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room cmd
-                                    , updateMob (Mob.addItem item) $ Mob.id $ actor cmd
-                                    , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
-                                    ]
-                )
+commandList = [ CommandEntry "help" Nothing Nothing
+                    (\ cmd world ->
+                        let
+                            commands = sort $ Map.keys commandBuilders
+                        in
+                            Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
+                    )
+              , CommandEntry "go" (Just (FindInRoom, [FindLink])) Nothing
+                    (\ cmd world -> do
+                        link <- asLink $ target1 cmd
+                        destinationRoomId <- return $ targetRoomId $ Link.def link
+                        updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor cmd) $ roomId $ room cmd
+                                          , updateRoom (addMobId $ Mob.id $ actor cmd) $ destinationRoomId
+                                          , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "leave" "left", Const "the room."]
+                                          , sendMessageTo cmd (MsgSpecificRoom destinationRoomId) [ActorDesc, ActorVerb "enter" "enters", Xtra False, Const "."]
+                                          , updateMob (\mob -> Right $ mob { locationId = destinationRoomId }) $ Mob.id $ actor cmd
+                                          ]
+              )
+              , CommandEntry "get" (Just (FindInRoom, [FindItem])) Nothing
+                    (\ cmd world -> do
+                        item <- asItem $ target1 cmd
+                        updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room cmd
+                                          , updateMob (Mob.addItem item) $ Mob.id $ actor cmd
+                                          , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
+                                          ]
+                    )
+              , CommandEntry "drop" (Just (FindInActor, [FindItem])) Nothing
+                    (\ cmd world -> do
+                        item <- asItem $ target1 cmd
+                        updateWorld world [ updateRoom (Room.addItem item) $ roomId $ room cmd
+                                          , updateMob (Mob.removeItem item) $ Mob.id $ actor cmd
+                                          , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
+                                          ]
+                    )
+              , CommandEntry "say" Nothing Nothing
+                    (\ cmd world ->
+                        updateWorld world [ sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "say" "says", Xtra True] ]
+                    )
+              , CommandEntry "yell" Nothing Nothing
+                    (\ cmd world ->
+                        updateWorld world [ sendMessageTo cmd MsgGlobal [ActorDesc, ActorVerb "yell" "yells", Xtra True] ]
+                    )
+              ]
 
-dropCommand = CommandEntry "drop" (Just (FindInActor, [FindItem])) Nothing
-                (\ cmd world -> do
-                    item <- asItem $ target1 cmd
-                    updateWorld world [ updateRoom (Room.addItem item) $ roomId $ room cmd
-                                    , updateMob (Mob.removeItem item) $ Mob.id $ actor cmd
-                                    , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
-                                    ]
-                )
+commandMap = Map.fromList $ map (\cmd -> (World.name cmd, cmd)) commandList
 
-commands = [ CommandEntry "get" (Just (FindInRoom, [FindItem])) Nothing
-                (\ cmd world -> do
-                    item <- asItem $ target1 cmd
-                    updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room cmd
-                                      , updateMob (Mob.addItem item) $ Mob.id $ actor cmd
-                                      , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "take" "takes", Target1Desc, Const "."]
-                                      ]
-                )
-           , CommandEntry "drop" (Just (FindInActor, [FindItem])) Nothing
-                (\ cmd world -> do
-                    item <- asItem $ target1 cmd
-                    updateWorld world [ updateRoom (Room.addItem item) $ roomId $ room cmd
-                                      , updateMob (Mob.removeItem item) $ Mob.id $ actor cmd
-                                      , sendMessageTo cmd MsgRoom [ActorDesc, ActorVerb "drop" "drops", Target1Desc, Const "."]
-                                      ]
-                )
-           ]
-
-commandBuilders = Map.fromList [ ("help", \_ -> Help)
-                               , ("broadcast", \rest -> Broadcast rest)
-                               , ("yell", \rest -> Yell rest)
-                               , ("say", \rest -> Say rest)
-                               , ("go", \rest -> Go rest)
+commandBuilders = Map.fromList [ ("help", \_ -> parseCommand2 $ "help")
+                               , ("yell", \rest -> parseCommand2 $ "yell " ++ rest)
+                               , ("say", \rest -> parseCommand2 $ "say " ++ rest)
+                               , ("go", \rest -> parseCommand2 $ "go " ++ rest)
                                , ("look", \_ -> Look)
                                , ("inventory", \_ -> Inventory)
-                               , ("get", \rest -> Get rest)
-                               , ("drop", \rest -> Drop rest)
+                               , ("get", \rest -> parseCommand2 $ "get " ++ rest)
+                               , ("drop", \rest -> parseCommand2 $ "drop " ++ rest)
                                ]
+
+buildCommand :: CommandEntry -> String -> Command
+buildCommand command rest =
+    let
+        (keyword1, rest') = case target1Spec command of
+            Just _ -> getFirstWord rest
+            Nothing -> ("", rest)
+
+        (keyword2, rest'') = case target2Spec command of
+            Just _ -> getFirstWord rest'
+            Nothing -> ("", rest)
+    in
+        ExecuteCommand command keyword1 keyword2 rest''
+
+parseCommand2 :: String -> Command
+parseCommand2 "" = Noop
+parseCommand2 line =
+    let
+        -- Important: This is the entry point for all input. Before even looking at it, we:
+        -- 1. Convert to lowercase AND
+        -- 2. Strip boundary whitespace
+        (firstWord, rest) = getFirstWord . strip $ map toLower line
+    in
+        case Map.lookup firstWord commandMap of
+            Just command -> buildCommand command rest
+            Nothing -> case find (\cmd -> startswith firstWord $ World.name cmd) commandList of
+                Just command -> buildCommand command rest
+                Nothing -> Invalid line
 
 parseCommand :: String -> Command
 parseCommand "" = Noop
@@ -81,12 +114,12 @@ parseCommand line =
         -- 2. Strip boundary whitespace
         (firstWord, rest) = getFirstWord . strip $ map toLower line
     in case Map.lookup firstWord commandBuilders of
-        Just builder -> builder $ strip rest -- Additional strip here in case there is extra whitespace after the first word
+        Just builder -> builder $ rest
         Nothing -> Invalid line
 
 getFirstWord :: String -> (String, String)
 getFirstWord line = case firstSpace of
-    Just index -> (take index line, drop (index + 1) line)
+    Just index -> (take index line, strip $ drop (index + 1) line)
     Nothing -> (line, [])
     where firstSpace = elemIndex ' ' line
 
@@ -97,28 +130,9 @@ applyCommand userId command world =
             Right world
         Invalid text ->
             Left $ "Invalid input: " ++ text
-        Help ->
-            let
-                commands = sort $ Map.keys commandBuilders
-            in
-                Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
-        Broadcast message ->
-            sendBroadcastMessage message world
-        Yell text ->
-            sendGlobalMessage userId TargetNone TargetNone text message world
-            where message = [ActorDesc, ActorVerb "yell" "yells", Xtra True]
-        Say text ->
-            sendLocalMessage userId TargetNone TargetNone text message world
-            where message = [ActorDesc, ActorVerb "say" "says", Xtra True]
-        Go dir ->
-            followLink userId dir world
         Look ->
             lookRoom userId world
         Inventory ->
             showInventory userId world
-        Get keyword ->
-            doCommand userId getCommand keyword "" "" world
-        Drop keyword ->
-            doCommand userId dropCommand keyword "" "" world
         ExecuteCommand cmdEnty keyword1 keyword2 extra ->
             doCommand userId cmdEnty keyword1 keyword2 extra world

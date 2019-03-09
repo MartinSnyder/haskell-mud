@@ -5,10 +5,7 @@ module World ( World
              , buildWorld
              , extractOutput
              , addPlayerIfAbsent
-             , followLink
              , sendBroadcastMessage
-             , sendGlobalMessage
-             , sendLocalMessage
              , sendMessageTo
              , lookRoom
              , doCommand
@@ -235,39 +232,9 @@ updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =
     foldl (\ acc op -> acc >>= op) (Right world) ops
 
-followLink :: UserId -> String -> World -> Either String World
-followLink userId keyword world =
-    do
-        actor <- getPlayer userId world
-        sourceRoom <- getRoom (locationId actor) world
-        link <- case findTarget FindInRoom [FindLink] keyword actor sourceRoom [] of
-            TargetLink link -> Right link
-            _ -> Left $ "Can't find an exit called '" ++ keyword ++ ".'"
-        targetRoom <- getRoom (targetRoomId $ Link.def link) world
-        updateWorld world [ updateRoom (removeMobId $ Mob.id actor) $ roomId sourceRoom
-                          , updateRoom (addMobId $ Mob.id actor) $ (roomId targetRoom)
-                          , sendMessageRoomId (Mob.id actor) (TargetLink link) TargetNone "" exitMessage (roomId sourceRoom)
-                          , sendMessageRoomId (Mob.id actor) (TargetLink link) TargetNone (GameObj.sDesc targetRoom) enterMessage (roomId targetRoom)
-                          , updateMob (\mob -> Right $ mob { locationId = (roomId targetRoom)}) (Mob.id actor)
-                          ]
-    where
-        exitMessage = [ActorDesc, ActorVerb "leave" "left", Const "the room."]
-        enterMessage = [ActorDesc, ActorVerb "enter" "enters", Xtra False, Const "."]
-
 sendBroadcastMessage :: String -> World -> Either String World
 sendBroadcastMessage message world =
     return world { connections = Map.map (sendMessage message) $ World.connections world }
-
-sendGlobalMessage :: UserId -> Target -> Target -> String -> Message -> World -> Either String World
-sendGlobalMessage userId target1 target2 xtra message world = do
-    actor <- getPlayer userId world
-    return world { connections = Map.map (\ p -> sendMessage (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }
-
-sendLocalMessage :: UserId -> Target -> Target -> String -> Message -> World -> Either String World
-sendLocalMessage userId target1 target2 xtra message world =
-    do
-        actor <- getPlayer userId world
-        sendMessageRoomId (Mob.id actor) target1 target2 xtra message (locationId actor) world
 
 sendMessageTo :: CommandPayload -> MessageDestination -> Message -> World -> Either String World
 sendMessageTo (CommandPayload actor room target1 target2 xtra) msgDest message world =
