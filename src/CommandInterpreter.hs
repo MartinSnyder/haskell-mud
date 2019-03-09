@@ -11,21 +11,19 @@ import Link
 import LinkDef
 import GameObj
 import Room
+import RoomDef
 import Message
 import PlayerData
 import Target
 
 data Command = Noop
              | Invalid String
-             | Look
              | ExecuteCommand CommandEntry String String String
 
 commandList = [ CommandEntry "help" Nothing Nothing
                     (\ _ _ ->
-                        let
-                            commands = sort $ Map.keys commandBuilders
-                        in
-                            Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
+                        let commands = sort $ Map.keys commandBuilders
+                        in  Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
                     )
               , CommandEntry "go" (Just (FindInRoom, [FindLink])) Nothing
                     (\ args world -> do
@@ -56,16 +54,28 @@ commandList = [ CommandEntry "help" Nothing Nothing
                     )
               , CommandEntry "say" Nothing Nothing
                     (\ args world ->
-                        updateWorld world [ sendMessageTo args MsgRoom [ActorDesc, ActorVerb "say" "says", Xtra True] ]
+                        sendMessageTo args MsgRoom [ActorDesc, ActorVerb "say" "says", Xtra True] world
                     )
               , CommandEntry "inventory" Nothing Nothing
-                    (\ args world -> do
-                        text <- return $ foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items $ actor args))
-                        updateWorld world [ sendTextMob (actor args) text ]
+                    (\ args world ->
+                        let text = foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items $ actor args))
+                        in  sendTextMob (actor args) text world
+                    )
+              , CommandEntry "look" Nothing Nothing
+                    (\ args world ->
+                        do
+                            room <- return $ World.room args
+                            mobs <- getRoomMobs room world
+                            elements <- return [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap LinkDef.name $ RoomDef.links (Room.def room))
+                                               , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap GameObj.sDesc mobs)
+                                               , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap (GameObj.sDesc) (Room.items room))
+                                               ]
+                            text <- return $ foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
+                            sendTextMob (actor args) text world
                     )
               , CommandEntry "yell" Nothing Nothing
                     (\ args world ->
-                        updateWorld world [ sendMessageTo args MsgGlobal [ActorDesc, ActorVerb "yell" "yells", Xtra True] ]
+                        sendMessageTo args MsgGlobal [ActorDesc, ActorVerb "yell" "yells", Xtra True] world
                     )
               ]
 
@@ -75,7 +85,7 @@ commandBuilders = Map.fromList [ ("help", \_ -> parseCommand2 $ "help")
                                , ("yell", \rest -> parseCommand2 $ "yell " ++ rest)
                                , ("say", \rest -> parseCommand2 $ "say " ++ rest)
                                , ("go", \rest -> parseCommand2 $ "go " ++ rest)
-                               , ("look", \_ -> Look)
+                               , ("look", \_ -> parseCommand2 $ "look")
                                , ("inventory", \_ -> parseCommand2 $ "inventory")
                                , ("get", \rest -> parseCommand2 $ "get " ++ rest)
                                , ("drop", \rest -> parseCommand2 $ "drop " ++ rest)
@@ -134,7 +144,5 @@ applyCommand userId command world =
             Right world
         Invalid text ->
             Left $ "Invalid input: " ++ text
-        Look ->
-            lookRoom userId world
         ExecuteCommand cmdEntry keyword1 keyword2 extra ->
             doCommand userId cmdEntry keyword1 keyword2 extra world

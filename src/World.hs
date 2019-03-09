@@ -4,11 +4,11 @@ module World ( World
              , CommandEntry(..)
              , buildWorld
              , addPlayerIfAbsent
-             , lookRoom -- remove
-             , doCommand
+             , getRoomMobs
              , updateRoom
              , updateMob
              , updateWorld
+             , doCommand
              , sendTextMob
              , sendMessageTo
              , extractOutput
@@ -133,6 +133,10 @@ getMob mobId world =
         Just mob -> Right mob
         Nothing -> Left $ "Cannot find mob " ++ show mobId
 
+getRoomMobs :: Room -> World -> Either String [Mob]
+getRoomMobs room world =
+    mobIdsToMobs (mobIds room) world
+
 mobIdsToMobs :: [MobId] -> World -> Either String [Mob]
 mobIdsToMobs mobIds world =
     foldr (folder world) (Right []) mobIds
@@ -170,25 +174,6 @@ doCommand userId command keyword1 keyword2 xtra world =
         target1 <- return $ resolveTarget (target1Spec command) keyword1 actor room mobs
         target2 <- return $ resolveTarget (target2Spec command) keyword2 actor room mobs
         (execute command) (CommandArguments actor room target1 target2 xtra) world
-
-internalLookRoom :: UserId -> Room -> [Mob] -> World -> Either String World
-internalLookRoom userId room mobs world =
-    let
-        elements = [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap LinkDef.name $ RoomDef.links (Room.def room))
-                   , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap GameObj.sDesc mobs)
-                   , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap (GameObj.sDesc) (Room.items room))
-                   ]
-        text = foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
-    in
-        sendTextUser userId text world
-
-lookRoom :: UserId -> World -> Either String World
-lookRoom userId world =
-    do
-        mob <- getPlayer userId world
-        room <- getRoom (locationId mob) world
-        mobs <- mobIdsToMobs (mobIds room) world
-        internalLookRoom userId room mobs world
 
 --------------------------
 -- Routing text to players
