@@ -235,11 +235,7 @@ broadcastText message world =
 
 sendMessageMobId :: Mob -> Target -> Target -> String -> Message -> MobId -> World -> Either String World
 sendMessageMobId actor target1 target2 xtra message mobId world =
-    let
-        maybeUserId = do
-            mob <- Map.lookup mobId (mobs world)
-            connectionId mob
-    in case maybeUserId of
+    case getMobUserId mobId world of
         Just userId -> do
             connection <- getConnection userId world
             sendTextUser userId (resolveMessage actor target1 target2 xtra message connection) world
@@ -250,22 +246,17 @@ sendMessageRoom :: Mob -> Target -> Target -> String -> Message -> Room -> World
 sendMessageRoom actor target1 target2 xtra message room world =
     foldl (\ acc mob -> acc >>= sendMessageMobId actor target1 target2 xtra message mob) (Right world) $ Room.mobIds room
 
-sendMessageRoomId :: MobId -> Target -> Target -> String -> Message -> DefId -> World -> Either String World
-sendMessageRoomId actorId target1 target2 xtra message roomId world =
-    do
-        room <- getRoom roomId world
-        actor <- getMob actorId world
-        sendMessageRoom actor target1 target2 xtra message room world
-
 sendMessageTo :: CommandPayload -> MessageDestination -> Message -> World -> Either String World
 sendMessageTo (CommandPayload actor room target1 target2 xtra) msgDest message world =
     case msgDest of
         MsgGlobal ->
             Right $ world { connections = Map.map (\ p -> sendText (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }
         MsgRoom ->
-            sendMessageRoomId (Mob.id actor) target1 target2 xtra message (locationId actor) world
+            sendMessageRoom actor target1 target2 xtra message room world
         MsgSpecificRoom targetRoomId ->
-            sendMessageRoomId (Mob.id actor) target1 target2 xtra message targetRoomId world
+            do
+                targetRoom <- getRoom targetRoomId world
+                sendMessageRoom actor target1 target2 xtra message targetRoom world
 
 -----------------------------
 -- Retrieving output for players
