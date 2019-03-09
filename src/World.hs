@@ -133,8 +133,6 @@ getMob mobId world =
         Just mob -> Right mob
         Nothing -> Left $ "Cannot find mob " ++ show mobId
 
--- TODO: getMobsForRoom
-
 mobIdsToMobs :: [MobId] -> World -> Either String [Mob]
 mobIdsToMobs mobIds world =
     foldr (folder world) (Right []) mobIds
