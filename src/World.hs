@@ -157,27 +157,6 @@ updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =
     foldl (\ acc op -> acc >>= op) (Right world) ops
 
-internalLookRoom :: Room -> [Mob] -> Connection -> World -> Either String World
-internalLookRoom room mobs connection world =
-    let
-        elements = [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap LinkDef.name $ RoomDef.links (Room.def room))
-                   , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap GameObj.sDesc mobs)
-                   , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap (GameObj.sDesc) (Room.items room))
-                   ]
-        text = foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
-        nextConnection = sendText text connection
-    in
-        Right world { connections = Map.insert (Connection.userId nextConnection) nextConnection $ World.connections world }
-
-lookRoom :: UserId -> World -> Either String World
-lookRoom userId world =
-    do
-        connection <- getConnection userId world
-        mob <- getPlayer userId world
-        room <- getRoom (locationId mob) world
-        mobs <- mobIdsToMobs (mobIds room) world
-        internalLookRoom room mobs connection world
-
 resolveTarget :: Maybe (FindIn, [FindType]) -> String -> Mob -> Room -> [Mob] -> Target
 resolveTarget targetSpec keyword actor room roomMobs =
     fromMaybe TargetNone $ fmap (\(findIn, findTypes) -> findTarget findIn findTypes keyword actor room roomMobs) targetSpec
@@ -192,14 +171,32 @@ doCommand userId command keyword1 keyword2 xtra world =
         target2 <- return $ resolveTarget (target2Spec command) keyword2 actor room mobs
         (execute command) (CommandPayload actor room target1 target2 xtra) world
 
+internalLookRoom :: UserId -> Room -> [Mob] -> World -> Either String World
+internalLookRoom userId room mobs world =
+    let
+        elements = [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap LinkDef.name $ RoomDef.links (Room.def room))
+                   , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap GameObj.sDesc mobs)
+                   , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap (GameObj.sDesc) (Room.items room))
+                   ]
+        text = foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
+    in
+        sendTextUser userId text world
+
+lookRoom :: UserId -> World -> Either String World
+lookRoom userId world =
+    do
+        mob <- getPlayer userId world
+        room <- getRoom (locationId mob) world
+        mobs <- mobIdsToMobs (mobIds room) world
+        internalLookRoom userId room mobs world
+
 showInventory :: UserId -> World -> Either String World
 showInventory userId world =
     do
         connection <- getConnection userId world
         mob <- getPlayer userId world
         text <- return $ foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items mob))
-        nextConnection <- return $ sendText text connection
-        Right world { connections = Map.insert (Connection.userId nextConnection) nextConnection $ World.connections world }
+        sendTextUser userId text world
 
 --------------------------
 -- Routing text to players
