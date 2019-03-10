@@ -137,7 +137,7 @@ parseCommand line =
 getFirstWord :: String -> (String, String)
 getFirstWord line = case firstSpace of
     Just index -> (map toLower $ take index line, strip $ drop (index + 1) line)
-    Nothing -> (line, [])
+    Nothing -> (map toLower $ line, [])
     where firstSpace = elemIndex ' ' line
 
 applyCommand :: UserId -> Command -> World -> Either String World
