@@ -8,6 +8,7 @@ import RoomDef
 import ItemDef
 import LinkDef
 import World (buildWorld)
+import ProcLibrary (roomProcedureLibrary)
 import Repl
 import WebServer
 
@@ -18,19 +19,23 @@ initialWorld = buildWorld (0, 0)
         "Creatures of varying size form within the primordial soup!"
         [ ItemDef (0, 0) "a flat stone" "Time has smoothed this stone to have a perfectly flat surface" $ Set.fromList [ "flat", "stone" ]]
         [ LinkDef "Down" (1,0) ]
+        Nothing
   , RoomDef
         (1, 0)
         "Alpha Hill"
         "A quaint grassy hill. A dirt path to the south leads to a coastal town"
         []
         [ LinkDef "South" (1,1) ]
+        Nothing
   , RoomDef
         (1, 1)
         "Dusty path"
         "The dirt of the path is beaten flat and firm, but the dust still manages to cover your shoes."
         []
         [ LinkDef "North" (1,0) ]
+        $ Just "unstableFloor"
   ]
+  roomProcedureLibrary
 
 main = do
     args <- getArgs

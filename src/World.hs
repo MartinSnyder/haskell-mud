@@ -2,6 +2,7 @@ module World ( World
              , MessageDestination(..)
              , CommandArguments(..)
              , CommandEntry(..)
+             , RoomProcedure
              , buildWorld
              , addPlayerIfAbsent
              , getRoomMobs
@@ -39,22 +40,27 @@ data MessageDestination = MsgGlobal | MsgRoom | MsgSpecificRoom DefId
 data CommandArguments = CommandArguments { actor :: Mob
                                          , room :: Room
                                          , target1 :: Target
-                                        , target2 :: Target
+                                         , target2 :: Target
                                          , xtra :: String
                                          }
+
+type CommandExecutor = CommandArguments -> World -> Either String World
 
 data CommandEntry = CommandEntry { name :: String
                                  , target1Spec :: Maybe (FindIn, [FindType])
                                  , target2Spec :: Maybe (FindIn, [FindType])
-                                 , execute :: CommandArguments -> World -> Either String World
+                                 , execute :: CommandExecutor
                                  }
+
+type RoomProcedure = CommandEntry -> CommandArguments -> World -> Either String World
 
 data World = World { nextMobId :: MobId
                    , entryRoomId :: DefId
                    , rooms :: Map.Map DefId Room
                    , mobs :: Map.Map MobId Mob
+                   , roomProcs :: Map.Map String RoomProcedure
                    , connections :: Map.Map UserId Connection
-                   } deriving (Show)
+                   }
 
 buildRoom :: RoomDef -> Room
 buildRoom roomDef =
@@ -68,9 +74,9 @@ roomListToMap :: [RoomDef] -> Map.Map DefId Room
 roomListToMap roomDefs =
     foldl (\ acc roomDef -> Map.insert (GameDef.defId roomDef) (buildRoom roomDef) acc) Map.empty roomDefs
 
-buildWorld :: DefId -> [RoomDef] -> World
-buildWorld entry roomDefs =
-    World 0 entry (roomListToMap roomDefs) Map.empty Map.empty
+buildWorld :: DefId -> [RoomDef] -> Map.Map String RoomProcedure -> World
+buildWorld entry roomDefs roomProcs =
+    World 0 entry (roomListToMap roomDefs) Map.empty roomProcs Map.empty
 
 getEntry :: World -> Room
 getEntry world =
@@ -170,6 +176,19 @@ resolveTarget targetSpec keyword actor room roomMobs =
         Just target -> Right target
         _           -> Right TargetNone
 
+-- Execute procedure tied to the current room
+defaultRoomProc :: RoomProcedure
+defaultRoomProc _ _ world = Right world
+
+doRoomProc :: Room -> CommandEntry -> CommandArguments -> World -> Either String World
+doRoomProc room command args world =
+    let
+        maybeProc = do
+            name <- procName $ Room.def room
+            Map.lookup name $ roomProcs world
+        proc = fromMaybe defaultRoomProc maybeProc
+    in  proc command args world
+
 doCommand :: UserId -> CommandEntry -> String -> String -> String -> World -> Either String World
 doCommand userId command keyword1 keyword2 xtra world =
     do
@@ -178,7 +197,9 @@ doCommand userId command keyword1 keyword2 xtra world =
         mobs <- mobIdsToMobs (mobIds room) world
         target1 <- resolveTarget (target1Spec command) keyword1 actor room mobs
         target2 <- resolveTarget (target2Spec command) keyword2 actor room mobs
-        (execute command) (CommandArguments actor room target1 target2 xtra) world
+        args <- Right $ CommandArguments actor room target1 target2 xtra
+        world' <- (execute command) args world
+        doRoomProc room command args world'
 
 --------------------------
 -- Routing text to players
