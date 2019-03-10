@@ -117,20 +117,26 @@ parseCommand :: String -> Command
 parseCommand "" = Noop
 parseCommand line =
     let
-        -- Important: This is the entry point for all input. Before even looking at it, we:
-        -- 1. Convert to lowercase AND
-        -- 2. Strip boundary whitespace
-        (firstWord, rest) = getFirstWord . strip $ map toLower line
+        -- Important: This is the entry point for all input.
+        (firstWord, rest) = getFirstWord $ strip line
     in
+        -- Do an exact lookup in the map. If that doesn't work, do a startswith lookup against
+        -- the list. This lets users abbreviate commands, but also specify a command for an exact
+        -- match. When you abbreviate, the order the commands appear in the list above is important.
         case Map.lookup firstWord commandMap of
             Just command -> buildCommand command rest
-            Nothing -> case find (\cmd -> startswith firstWord $ World.name cmd) commandList of
+            Nothing      -> case find (\cmd -> startswith firstWord $ World.name cmd) commandList of
                 Just command -> buildCommand command rest
                 Nothing -> Invalid line
 
+-- 1. Breaks the first word off a string and converts it to lowercase
+-- 2. Strips whitespace both from the word and the remainder
+-- Because of thos this routine is used, command tokens and target keywords are ALWAYS lowercase
+-- when they are passed to other parts of the system. The rest of the text is passed unmodified
+-- except that boundary whitespace of the remained is removed.
 getFirstWord :: String -> (String, String)
 getFirstWord line = case firstSpace of
-    Just index -> (take index line, strip $ drop (index + 1) line)
+    Just index -> (map toLower $ take index line, strip $ drop (index + 1) line)
     Nothing -> (line, [])
     where firstSpace = elemIndex ' ' line
 
