@@ -7,10 +7,12 @@ var mud = {}; // Namespace
 	mud.ENTRY_ID = 'entry';
 	mud.OUTPUT_ID = 'output';
 	mud.POLLING_FREQUENCY = 2000;
+	mud.MAX_IDLE_TICKS = 5 * 60 / (mud.POLLING_FREQUENCY / 1000); // 5 minutes
 
 	// Global variables
 	mud.user = null;
 	mud.pollingHandle = -1;
+	mud.idleTicks = 0;
 
 	mud.initPage = function () {
 		document.getElementById(mud.ENTRY_ID).focus();
@@ -18,7 +20,21 @@ var mud = {}; // Namespace
 		mud.writeOutput('Welcome to HaskellMUD!');
 		mud.writeOutput('Enter your username:');
 
-		mud.pollingHandle = window.setInterval(function () { mud.processEntry(''); }, mud.POLLING_FREQUENCY);
+		mud.pollingHandle = window.setInterval(mud.poll, mud.POLLING_FREQUENCY);
+	};
+
+	mud.poll = function () {
+		mud.idleTicks++;
+		if (mud.idleTicks > mud.MAX_IDLE_TICKS) {
+			// Stop polling
+			window.clearInterval(mud.pollingHandle);
+			mud.pollingHandle = -1;
+
+			mud.writeOutput('Disconnected due to inactivity. Refresh the page to reconnect.');
+		}
+		else {
+			mud.processEntry('');
+		}
 	};
 
 	mud.onEntryKeyPress = function (oCtl, oEvent) {
@@ -38,6 +54,7 @@ var mud = {}; // Namespace
 			}
 			else {
 				// Process the entry
+				mud.idleTicks = 0;
 				mud.processEntry(sEntry);
 			}
 		}
