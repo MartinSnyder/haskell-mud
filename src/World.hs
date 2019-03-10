@@ -161,9 +161,14 @@ updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =
     foldl (\ acc op -> acc >>= op) (Right world) ops
 
-resolveTarget :: Maybe (FindIn, [FindType]) -> String -> Mob -> Room -> [Mob] -> Target
+resolveTarget :: Maybe (FindIn, [FindType]) -> String -> Mob -> Room -> [Mob] -> Either String Target
 resolveTarget targetSpec keyword actor room roomMobs =
-    fromMaybe TargetNone $ fmap (\(findIn, findTypes) -> findTarget findIn findTypes keyword actor room roomMobs) targetSpec
+    case fmap (\(findIn, findTypes) -> findTarget findIn findTypes keyword actor room roomMobs) targetSpec of
+        Just TargetNone ->
+            if (keyword == "") then Right TargetNone
+                               else Left $ "Could not find anything matching '" ++ keyword ++ ".'"
+        Just target -> Right target
+        _           -> Right TargetNone
 
 doCommand :: UserId -> CommandEntry -> String -> String -> String -> World -> Either String World
 doCommand userId command keyword1 keyword2 xtra world =
@@ -171,8 +176,8 @@ doCommand userId command keyword1 keyword2 xtra world =
         actor <- getPlayer userId world
         room <- getRoom (locationId actor) world
         mobs <- mobIdsToMobs (mobIds room) world
-        target1 <- return $ resolveTarget (target1Spec command) keyword1 actor room mobs
-        target2 <- return $ resolveTarget (target2Spec command) keyword2 actor room mobs
+        target1 <- resolveTarget (target1Spec command) keyword1 actor room mobs
+        target2 <- resolveTarget (target2Spec command) keyword2 actor room mobs
         (execute command) (CommandArguments actor room target1 target2 xtra) world
 
 --------------------------

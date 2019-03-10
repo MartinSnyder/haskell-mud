@@ -21,7 +21,6 @@ data Target = TargetNone
             | TargetItem Item
             | TargetMob Mob
             | TargetLink Link
-            | TargetNotFound String
             deriving (Eq)
 
 data FindIn = FindInRoom | FindInActor | FindNowhere
@@ -35,13 +34,12 @@ findTarget findIn findTypes keyword actor room roomMobs =
     if keyword == "" then
         TargetNone
     else
-        let result = foldl (\ acc findType ->
-                                if acc == TargetNone then
-                                    findTargetSingleType findIn findType keyword actor room roomMobs
-                                else
-                                    acc
-                            ) TargetNone findTypes
-        in if result == TargetNone then (TargetNotFound keyword) else result
+        foldl (\ acc findType ->
+                if acc == TargetNone then
+                    findTargetSingleType findIn findType keyword actor room roomMobs
+                else
+                    acc
+              ) TargetNone findTypes
 
 findInList :: GameObj a => String -> (a -> Target) -> [a] -> Target
 findInList keyword ctor list =
@@ -65,19 +63,16 @@ asItem :: Target -> Either String Item
 asItem target = case target of
     TargetItem item -> Right item
     TargetNone -> Left "No item specified"
-    TargetNotFound keyword -> Left $ "Could not find an item for '" ++ keyword ++ ".'"
     _ -> Left "That is not an item"
 
 asMob :: Target -> Either String Mob
 asMob target = case target of
     TargetMob mob -> Right mob
     TargetNone -> Left "No creature specified"
-    TargetNotFound keyword -> Left $ "Could not find a creature for '" ++ keyword ++ ".'"
     _ -> Left "That is not a creature"
 
 asLink :: Target -> Either String Link
 asLink target = case target of
     TargetLink link -> Right link
     TargetNone -> Left "No exit specified"
-    TargetNotFound keyword -> Left $ "Could not find a exit for '" ++ keyword ++ ".'"
     _ -> Left "That is not a exit"
