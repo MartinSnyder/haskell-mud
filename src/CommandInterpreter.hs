@@ -48,6 +48,14 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                                       , sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "drop" "drops", Desc Target1, Const "."]
                                       ]
                 )
+                , CommandEntry "give" (Just (FindInActor, [FindItem])) (Just (FindInRoom, [FindMob])) (\ args world -> do
+                    item <- asItem $ target1 args
+                    targetMob <- asMob $ target2 args
+                    updateWorld world [ updateMob (Mob.removeItem item) $ Mob.id $ actor args
+                                      , updateMob (Mob.addItem item) $ Mob.id $ targetMob
+                                      , sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "give" "gives", Desc Target1, Const " to ", Desc Target2, Const "."]
+                                      ]
+                )
                 , CommandEntry "say" Nothing Nothing (\ args world ->
                     if xtra args == "" then Left $ "What do you want to say?"
                     else                    sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "say" "says", Sur "'" Xtra] world
