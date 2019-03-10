@@ -7,7 +7,7 @@ data MobDef = MobDef { defId :: DefId
                      , sDesc :: String
                      , lDesc :: String
                      , keywords :: Set String
-                     } deriving (Show, Eq)
+                     } deriving (Show, Read, Eq)
 
 instance GameDef MobDef where
     defId def = MobDef.defId def

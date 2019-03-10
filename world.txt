@@ -1,0 +1,43 @@
+WorldDef { entry = (0,0)
+         , roomDefs = [
+            RoomDef { defId = (0,0)
+                    , name = "The Spawning Pool"
+                    , desc = "Creatures of varying size form within the primordial soup!"
+                    , initialItems = [
+                        ItemDef { defId = (0,0)
+                                , sDesc = "a flat stone"
+                                , lDesc = "Time has smoothed this stone to have a perfectly flat surface"
+                                , keywords = fromList ["flat","stone"]
+                                }
+                    ]
+                    , links = [
+                        LinkDef { name = "Down"
+                                , targetRoomId = (1,0)
+                                }
+                    ]
+                    , procName = Nothing
+            }
+          , RoomDef { defId = (1,0)
+                    , name = "Alpha Hill"
+                    , desc = "A quaint grassy hill. A dirt path to the south leads to a coastal town"
+                    , initialItems = []
+                    , links = [
+                        LinkDef { name = "South"
+                                , targetRoomId = (1,1)
+                                }
+                    ]
+                    , procName = Nothing
+            }
+          , RoomDef { defId = (1,1)
+                    , name = "Dusty path"
+                    , desc = "The dirt of the path is beaten flat and firm, but the dust still manages to cover your shoes."
+                    , initialItems = []
+                    , links = [
+                        LinkDef { name = "North"
+                                , targetRoomId = (1,0)
+                                }
+                    ]
+                    , procName = Just "unstableFloor"
+            }
+        ]
+    }

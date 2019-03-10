@@ -12,7 +12,7 @@ data RoomDef = RoomDef { defId :: DefId
                        , initialItems :: [ItemDef]
                        , links :: [LinkDef]
                        , procName :: Maybe String
-                       } deriving (Show)
+                       } deriving (Show, Read)
 
 instance GameDef RoomDef where
     defId def = RoomDef.defId def

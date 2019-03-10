@@ -7,7 +7,7 @@ import GameObj
 
 data LinkDef = LinkDef { name :: String
                        , targetRoomId :: DefId
-                       } deriving (Show, Eq)
+                       } deriving (Show, Read, Eq)
 
 instance GameDef LinkDef where
     defId def = (-1, -1)

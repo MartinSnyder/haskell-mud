@@ -25,6 +25,7 @@ import MobDef
 import ItemDef
 import LinkDef
 import RoomDef
+import WorldDef
 import PlayerData
 import GameObj
 import Room
@@ -74,9 +75,9 @@ roomListToMap :: [RoomDef] -> Map.Map DefId Room
 roomListToMap roomDefs =
     foldl (\ acc roomDef -> Map.insert (GameDef.defId roomDef) (buildRoom roomDef) acc) Map.empty roomDefs
 
-buildWorld :: DefId -> [RoomDef] -> Map.Map String RoomProcedure -> World
-buildWorld entry roomDefs roomProcs =
-    World 0 entry (roomListToMap roomDefs) Map.empty roomProcs Map.empty
+buildWorld :: WorldDef -> Map.Map String RoomProcedure -> World
+buildWorld worldDef roomProcs =
+    World 0 (entry worldDef) (roomListToMap $ roomDefs worldDef) Map.empty roomProcs Map.empty
 
 getEntry :: World -> Room
 getEntry world =
