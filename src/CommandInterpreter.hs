@@ -30,7 +30,7 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                     updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor args) $ locationId $ actor args
                                       , updateRoom (addMobId $ Mob.id $ actor args) $ destinationRoomId
                                       , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "leave" "left", Const "the room."]
-                                      , sendMessageTo args (MsgRoom destinationRoomId) [Desc Actor, Sur " " $ Verb Actor "enter" "enters", Xtra, Const "."]
+                                      , sendMessageTo args (MsgRoom destinationRoomId) [Desc Actor, Sur " " $ Verb Actor "enter" "enters", Desc Target1, Const "."]
                                       , updateMob (\mob -> Right $ mob { locationId = destinationRoomId }) $ Mob.id $ actor args
                                       ]
                 )
@@ -109,7 +109,7 @@ buildCommand command rest =
 
         (keyword2, rest'') = case target2Spec command of
             Just _ -> getFirstWord rest'
-            Nothing -> ("", rest)
+            Nothing -> ("", rest')
     in
         ExecuteCommand command keyword1 keyword2 rest''
 
