@@ -11,7 +11,7 @@ WorldDef { entry = (0,0)
                         }
                     ]
                     , links = [
-                        LinkDef { name = "Down"
+                        LinkDef { direction = Down
                                 , targetRoomId = (1,0)
                         }
                     ]
@@ -22,7 +22,7 @@ WorldDef { entry = (0,0)
                     , desc = "A quaint grassy hill. A dirt path to the south leads to a coastal town"
                     , initialItems = []
                     , links = [
-                        LinkDef { name = "South"
+                        LinkDef { direction = South
                                 , targetRoomId = (1,1)
                         }
                     ]
@@ -33,7 +33,7 @@ WorldDef { entry = (0,0)
                     , desc = "The dirt of the path is beaten flat and firm, but the dust still manages to cover your shoes."
                     , initialItems = []
                     , links = [
-                        LinkDef { name = "North"
+                        LinkDef { direction = North
                                 , targetRoomId = (1,0)
                         }
                     ]
@@ -41,14 +41,12 @@ WorldDef { entry = (0,0)
             }
          ]
          , passageDefs = [
-                PassageDef { sDesc = "a translucent passage through the soup, filled with goo"
-                           , links = [ LinkDef2 { from = (0, 0), to = (1, 0), direction = Down } ]
+                PassageDef { defId = (1, 0)
+                           , lDesc = "a translucent passage through the soup, filled with goo"
                            , passageType = Unrestricted
                 }
-              , PassageDef { sDesc = "a dirt path through the grass"
-                           , links = [ LinkDef2 { from = (1, 0), to = (1, 1), direction = South }
-                                     , LinkDef2 { from = (1, 1), to = (1, 0), direction = North }
-                           ]
+              , PassageDef { defId = (1, 1)
+                           , lDesc = "a dirt path through the grass"
                            , passageType = Unrestricted
               }
          ]

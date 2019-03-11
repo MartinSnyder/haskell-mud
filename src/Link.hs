@@ -4,8 +4,7 @@ import LinkDef
 import GameDef
 import GameObj
 
-data Link = Link { def :: LinkDef
-                 } deriving (Show, Eq)
+data Link = Link { def :: LinkDef }
 
 instance GameObj Link where
     sDesc link = GameDef.sDesc $ Link.def link

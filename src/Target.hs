@@ -10,6 +10,7 @@ module Target( Target(..)
 
 import Data.List (find)
 import Data.Map (elems)
+import Data.Maybe (isNothing, fromMaybe)
 
 import GameObj
 import Item
@@ -21,9 +22,8 @@ data Target = TargetNone
             | TargetItem Item
             | TargetMob Mob
             | TargetLink Link
-            deriving (Eq)
 
-data FindIn = FindInRoom | FindInActor | FindNowhere
+data FindIn = FindInRoom | FindInActor
 
 data FindType = FindItem | FindMob | FindLink
 
@@ -34,30 +34,26 @@ findTarget findIn findTypes keyword actor room roomMobs =
     if keyword == "" then
         TargetNone
     else
-        foldl (\ acc findType ->
-                if acc == TargetNone then
-                    findTargetSingleType findIn findType keyword actor room roomMobs
-                else
-                    acc
-              ) TargetNone findTypes
+        fromMaybe TargetNone $ foldl (\ acc findType -> if isNothing acc then
+                                                            findTargetSingleType findIn findType keyword actor room roomMobs
+                                                        else
+                                                            acc
+                                     ) Nothing findTypes
 
-findInList :: GameObj a => String -> (a -> Target) -> [a] -> Target
+findInList :: GameObj a => String -> (a -> Target) -> [a] -> Maybe Target
 findInList keyword ctor list =
-    case find (\obj -> GameObj.matches obj keyword) $ list of
-        Just obj -> ctor obj
-        Nothing -> TargetNone
+    fmap ctor $ find (\obj -> GameObj.matches obj keyword) $ list
 
-findTargetSingleType :: FindIn -> FindType -> String -> Mob -> Room -> [Mob] -> Target
+findTargetSingleType :: FindIn -> FindType -> String -> Mob -> Room -> [Mob] -> Maybe Target
 findTargetSingleType findIn findType keyword actor room roomMobs =
     case findIn of
         FindInRoom -> case findType of
             FindItem -> findInList keyword TargetItem $ Room.items room
             FindMob -> findInList keyword TargetMob roomMobs
-            FindLink -> findInList keyword TargetLink $ elems $ Room.links room
+            FindLink -> findInList keyword TargetLink $ Room.links room
         FindInActor -> case findType of
             FindItem -> findInList keyword TargetItem $ Mob.items actor
-            _ -> TargetNone
-        FindNowhere -> TargetNone
+            _ -> Nothing
 
 asItem :: Target -> Either String Item
 asItem target = case target of

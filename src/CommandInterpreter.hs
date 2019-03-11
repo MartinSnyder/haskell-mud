@@ -68,9 +68,9 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                     do
                         room <- getRoom (locationId $ actor args) world
                         mobs <- getRoomMobs room world
-                        elements <- return [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap LinkDef.name $ RoomDef.links (Room.def room))
+                        elements <- return [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap GameObj.sDesc $ Room.links room)
                                            , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap GameObj.sDesc mobs)
-                                           , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap (GameObj.sDesc) (Room.items room))
+                                           , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap GameObj.sDesc $ Room.items room)
                                            ]
                         text <- return $ foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
                         sendTextMob (actor args) text world

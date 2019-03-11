@@ -66,7 +66,7 @@ data World = World { nextMobId :: MobId
 buildRoom :: RoomDef -> Room
 buildRoom roomDef =
     let
-        links = Map.fromList $ fmap (\linkDef -> (map toLower $ LinkDef.name linkDef, Link linkDef)) (RoomDef.links roomDef)
+        links = fmap Link $ RoomDef.links roomDef
         items = fmap (\itemDef -> Item itemDef) (RoomDef.initialItems roomDef)
     in
         Room roomDef [] items links

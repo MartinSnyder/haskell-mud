@@ -13,8 +13,8 @@ import Item
 data Room = Room { def :: RoomDef
                  , mobIds :: [MobId]
                  , items :: [Item]
-                 , links :: Map String Link
-                 } deriving (Show)
+                 , links :: [Link]
+                 }
 
 roomId :: Room -> DefId
 roomId room = GameDef.defId (Room.def room)
