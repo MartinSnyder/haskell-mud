@@ -11,9 +11,7 @@ WorldDef { entry = (0,0)
                         }
                     ]
                     , links = [
-                        LinkDef { direction = Down
-                                , targetRoomId = (1,0)
-                        }
+                        LinkDef { direction = Down, targetRoomId = (1,0) }
                     ]
                     , procName = Nothing
             }
@@ -22,9 +20,7 @@ WorldDef { entry = (0,0)
                     , desc = "A quaint grassy hill. A dirt path to the south leads to a coastal town"
                     , initialItems = []
                     , links = [
-                        LinkDef { direction = South
-                                , targetRoomId = (1,1)
-                        }
+                        LinkDef { direction = South , targetRoomId = (1,1) }
                     ]
                     , procName = Nothing
             }
@@ -33,9 +29,7 @@ WorldDef { entry = (0,0)
                     , desc = "The dirt of the path is beaten flat and firm, but the dust still manages to cover your shoes."
                     , initialItems = []
                     , links = [
-                        LinkDef { direction = North
-                                , targetRoomId = (1,0)
-                        }
+                        LinkDef { direction = North , targetRoomId = (1,0) }
                     ]
                     , procName = Just "unstableFloor"
             }
