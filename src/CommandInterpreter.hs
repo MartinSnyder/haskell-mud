@@ -27,25 +27,25 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                 , CommandEntry "go" (Just (FindInRoom, [FindLink])) Nothing (\ args world -> do
                     link <- asLink $ target1 args
                     destinationRoomId <- return $ targetRoomId $ Link.def link
-                    updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor args) $ roomId $ room args
+                    updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor args) $ locationId $ actor args
                                       , updateRoom (addMobId $ Mob.id $ actor args) $ destinationRoomId
-                                      , sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "leave" "left", Const "the room."]
-                                      , sendMessageTo args (MsgSpecificRoom destinationRoomId) [Desc Actor, Sur " " $ Verb Actor "enter" "enters", Xtra, Const "."]
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "leave" "left", Const "the room."]
+                                      , sendMessageTo args (MsgRoom destinationRoomId) [Desc Actor, Sur " " $ Verb Actor "enter" "enters", Xtra, Const "."]
                                       , updateMob (\mob -> Right $ mob { locationId = destinationRoomId }) $ Mob.id $ actor args
                                       ]
                 )
                 , CommandEntry "get" (Just (FindInRoom, [FindItem])) Nothing (\ args world -> do
                     item <- asItem $ target1 args
-                    updateWorld world [ updateRoom (Room.removeItem item) $ roomId $ room args
+                    updateWorld world [ updateRoom (Room.removeItem item) $ locationId $ actor args
                                       , updateMob (Mob.addItem item) $ Mob.id $ actor args
-                                      , sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "take" "takes", Desc Target1, Const "."]
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "take" "takes", Desc Target1, Const "."]
                                       ]
                 )
                 , CommandEntry "drop" (Just (FindInActor, [FindItem])) Nothing (\ args world -> do
                     item <- asItem $ target1 args
-                    updateWorld world [ updateRoom (Room.addItem item) $ roomId $ room args
+                    updateWorld world [ updateRoom (Room.addItem item) $ locationId $ actor args
                                       , updateMob (Mob.removeItem item) $ Mob.id $ actor args
-                                      , sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "drop" "drops", Desc Target1, Const "."]
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "drop" "drops", Desc Target1, Const "."]
                                       ]
                 )
                 , CommandEntry "give" (Just (FindInActor, [FindItem])) (Just (FindInRoom, [FindMob])) (\ args world -> do
@@ -53,12 +53,12 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                     targetMob <- asMob $ target2 args
                     updateWorld world [ updateMob (Mob.removeItem item) $ Mob.id $ actor args
                                       , updateMob (Mob.addItem item) $ Mob.id $ targetMob
-                                      , sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "give" "gives", Desc Target1, Const " to ", Desc Target2, Const "."]
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "give" "gives", Desc Target1, Const " to ", Desc Target2, Const "."]
                                       ]
                 )
                 , CommandEntry "say" Nothing Nothing (\ args world ->
                     if xtra args == "" then Left $ "What do you want to say?"
-                    else                    sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "say" "says", Sur "'" Xtra] world
+                    else                    sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "say" "says", Sur "'" Xtra] world
                 )
                 , CommandEntry "inventory" Nothing Nothing (\ args world ->
                     let text = foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items $ actor args))
@@ -66,7 +66,7 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                 )
                 , CommandEntry "look" Nothing Nothing (\ args world ->
                     do
-                        room <- return $ World.room args
+                        room <- getRoom (locationId $ actor args) world
                         mobs <- getRoomMobs room world
                         elements <- return [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap LinkDef.name $ RoomDef.links (Room.def room))
                                            , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap GameObj.sDesc mobs)
@@ -81,20 +81,20 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                 )
                 , CommandEntry "bow" (Just (FindInRoom, findAllTypes)) Nothing (\ args world ->
                     case target1 args of
-                        TargetNone -> sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "bow" "bows", Const "deeply."] world
-                        _          -> sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "bow" "bows", Const "to ", Desc Target1, Const "."] world
+                        TargetNone -> sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "bow" "bows", Const "deeply."] world
+                        _          -> sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "bow" "bows", Const "to ", Desc Target1, Const "."] world
                 )
                 , CommandEntry "clap" (Just (FindInRoom, findAllTypes)) Nothing (\ args world ->
                     case target1 args of
-                        TargetNone -> sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "clap" "claps", Const "enthusiastically."] world
-                        _          -> sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "clap" "claps", Const "at ", Desc Target1, Const "."] world
+                        TargetNone -> sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "clap" "claps", Const "enthusiastically."] world
+                        _          -> sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "clap" "claps", Const "at ", Desc Target1, Const "."] world
                 )
                 , CommandEntry "jump" (Just (FindInRoom, findAllTypes)) Nothing (\ args world ->
                     case target1 args of
-                        TargetNone   -> sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "jump" "jumps", Const "as high as ", Pro Actor, Const " can!" ] world
-                        TargetItem _ -> sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "jump" "jumps", Const "over ", Desc Target1, Const "."] world
-                        TargetMob _  -> sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "get" "gets", Const "ready to jump over ", Desc Target1, Const " but ", Verb Actor "think" "thinks", Const " better of it."] world
-                        TargetLink _ -> sendMessageTo args MsgRoom [Desc Actor, Sur " " $ Verb Actor "jump" "jumps", Const "towards ", Desc Target1, Const " slowly."] world
+                        TargetNone   -> sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "jump" "jumps", Const "as high as ", Pro Actor, Const " can!" ] world
+                        TargetItem _ -> sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "jump" "jumps", Const "over ", Desc Target1, Const "."] world
+                        TargetMob _  -> sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "get" "gets", Const "ready to jump over ", Desc Target1, Const " but ", Verb Actor "think" "thinks", Const " better of it."] world
+                        TargetLink _ -> sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "jump" "jumps", Const "towards ", Desc Target1, Const " slowly."] world
                 )
                 ]
 

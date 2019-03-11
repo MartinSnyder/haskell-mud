@@ -9,7 +9,7 @@ roomProcedureLibrary :: Map String RoomProcedure
 roomProcedureLibrary = fromList([
         ("unstableFloor", (\ command args world ->
             if name command == "jump" then
-                sendMessageTo args MsgRoom [Const "The floor shifts and tilts when ", Desc Actor, Sp, Verb Actor "jump" "jumps", Const " on it."] world
+                sendMessageTo args MsgActorRoom [Const "The floor shifts and tilts when ", Desc Actor, Sp, Verb Actor "jump" "jumps", Const " on it."] world
             else
                 Right world
         ))

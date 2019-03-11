@@ -5,6 +5,7 @@ module World ( World
              , RoomProcedure
              , buildWorld
              , addPlayerIfAbsent
+             , getRoom
              , getRoomMobs
              , updateRoom
              , updateMob
@@ -36,10 +37,9 @@ import Connection
 import Message
 import Target
 
-data MessageDestination = MsgGlobal | MsgRoom | MsgSpecificRoom DefId
+data MessageDestination = MsgGlobal | MsgActorRoom | MsgRoom DefId
 
 data CommandArguments = CommandArguments { actor :: Mob
-                                         , room :: Room -- Remove?
                                          , target1 :: Target
                                          , target2 :: Target
                                          , xtra :: String
@@ -198,7 +198,7 @@ doCommand userId command keyword1 keyword2 xtra world =
         mobs <- mobIdsToMobs (mobIds room) world
         target1 <- resolveTarget (target1Spec command) keyword1 actor room mobs
         target2 <- resolveTarget (target2Spec command) keyword2 actor room mobs
-        args <- Right $ CommandArguments actor room target1 target2 xtra
+        args <- Right $ CommandArguments actor target1 target2 xtra
         world' <- (execute command) args world
         doRoomProc room command args world'
 
@@ -248,14 +248,14 @@ sendMessageRoom actor target1 target2 xtra message room world =
     foldl (\ acc mob -> acc >>= sendMessageMobId actor target1 target2 xtra message mob) (Right world) $ Room.mobIds room
 
 sendMessageTo :: CommandArguments -> MessageDestination -> Message -> World -> Either String World
-sendMessageTo (CommandArguments actor room target1 target2 xtra) msgDest message world =
+sendMessageTo (CommandArguments actor target1 target2 xtra) msgDest message world =
     case msgDest of
         MsgGlobal ->
             Right $ world { connections = Map.map (\ p -> sendText (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }
-        MsgRoom -> do
+        MsgActorRoom -> do
             targetRoom <- getRoom (locationId actor) world
             sendMessageRoom actor target1 target2 xtra message targetRoom world
-        MsgSpecificRoom targetRoomId -> do
+        MsgRoom targetRoomId -> do
             targetRoom <- getRoom targetRoomId world
             sendMessageRoom actor target1 target2 xtra message targetRoom world
 
