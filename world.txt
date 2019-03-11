@@ -11,7 +11,7 @@ WorldDef { entry = (0,0)
                         }
                     ]
                     , links = [
-                        LinkDef { direction = Down, targetRoomId = (1,0) }
+                        LinkDef { direction = Down, targetRoomId = (1,0), passageId = Just (0, 0) }
                     ]
                     , procName = Nothing
             }
@@ -20,7 +20,7 @@ WorldDef { entry = (0,0)
                     , desc = "A quaint grassy hill. A dirt path to the south leads to a coastal town"
                     , initialItems = []
                     , links = [
-                        LinkDef { direction = South , targetRoomId = (1,1) }
+                        LinkDef { direction = South , targetRoomId = (1,1), passageId = Just (1, 1) }
                     ]
                     , procName = Nothing
             }
@@ -29,18 +29,22 @@ WorldDef { entry = (0,0)
                     , desc = "The dirt of the path is beaten flat and firm, but the dust still manages to cover your shoes."
                     , initialItems = []
                     , links = [
-                        LinkDef { direction = North , targetRoomId = (1,0) }
+                        LinkDef { direction = North , targetRoomId = (1,0), passageId = Just (1, 1) }
                     ]
                     , procName = Just "unstableFloor"
             }
          ]
          , passageDefs = [
-                PassageDef { defId = (1, 0)
-                           , lDesc = "a translucent passage through the soup, filled with goo"
+                PassageDef { defId = (0, 0)
+                           , sDesc = "a goo passage"
+                           , lDesc = "Just beneath the surface, there is a translucent passage through the soup, filled with goo."
+                           , keywords = fromList ["goo","passage"]
                            , passageType = Unrestricted
                 }
               , PassageDef { defId = (1, 1)
-                           , lDesc = "a dirt path through the grass"
+                           , sDesc = "a dirt path"
+                           , lDesc = "The dirt path through the grass."
+                           , keywords = fromList ["dirt","path"]
                            , passageType = Unrestricted
               }
          ]

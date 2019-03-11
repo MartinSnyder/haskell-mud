@@ -9,6 +9,7 @@ data Direction = North | South | East | West | Up | Down | Enter String deriving
 
 data LinkDef = LinkDef { direction :: Direction
                        , targetRoomId :: DefId
+                       , passageId :: Maybe DefId
                        } deriving (Show, Read)
 
 getKeyword :: Direction -> String

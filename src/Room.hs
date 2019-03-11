@@ -16,13 +16,21 @@ data Room = Room { def :: RoomDef
                  , links :: [Link]
                  }
 
-roomId :: Room -> DefId
-roomId room = GameDef.defId (Room.def room)
-
 instance GameObj Room where
     sDesc room = GameDef.sDesc $ Room.def room
     lDesc room = GameDef.lDesc $ Room.def room
     matches room keyword = GameDef.matches (Room.def room) keyword
+
+buildRoom :: RoomDef -> Room
+buildRoom roomDef =
+    let
+        links = fmap Link $ RoomDef.links roomDef
+        items = fmap (\itemDef -> Item itemDef) (RoomDef.initialItems roomDef)
+    in
+        Room roomDef [] items links
+
+roomId :: Room -> DefId
+roomId room = GameDef.defId (Room.def room)
 
 addMobId :: MobId -> Room -> Either String Room
 addMobId mobId room =

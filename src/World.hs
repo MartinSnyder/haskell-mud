@@ -26,6 +26,7 @@ import MobDef
 import ItemDef
 import LinkDef
 import RoomDef
+import PassageDef
 import WorldDef
 import PlayerData
 import GameObj
@@ -33,6 +34,7 @@ import Room
 import Link
 import Mob
 import Item
+import Passage
 import Connection
 import Message
 import Target
@@ -58,26 +60,23 @@ type RoomProcedure = CommandEntry -> CommandArguments -> World -> Either String 
 data World = World { nextMobId :: MobId
                    , entryRoomId :: DefId
                    , rooms :: Map.Map DefId Room
+                   , passages :: Map.Map DefId Passage
                    , mobs :: Map.Map MobId Mob
                    , roomProcs :: Map.Map String RoomProcedure
                    , connections :: Map.Map UserId Connection
                    }
 
-buildRoom :: RoomDef -> Room
-buildRoom roomDef =
-    let
-        links = fmap Link $ RoomDef.links roomDef
-        items = fmap (\itemDef -> Item itemDef) (RoomDef.initialItems roomDef)
-    in
-        Room roomDef [] items links
-
 roomListToMap :: [RoomDef] -> Map.Map DefId Room
 roomListToMap roomDefs =
     foldl (\ acc roomDef -> Map.insert (GameDef.defId roomDef) (buildRoom roomDef) acc) Map.empty roomDefs
 
+passageListToMap :: [PassageDef] -> Map.Map DefId Passage
+passageListToMap passageDefs =
+    foldl (\ acc passageDef -> Map.insert (GameDef.defId passageDef) (buildPassage passageDef) acc) Map.empty passageDefs
+
 buildWorld :: WorldDef -> Map.Map String RoomProcedure -> World
 buildWorld worldDef roomProcs =
-    World 0 (entry worldDef) (roomListToMap $ roomDefs worldDef) Map.empty roomProcs Map.empty
+    World 0 (entry worldDef) (roomListToMap $ roomDefs worldDef) (passageListToMap $ passageDefs worldDef) Map.empty roomProcs Map.empty
 
 getEntry :: World -> Room
 getEntry world =

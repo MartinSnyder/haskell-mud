@@ -1,7 +1,7 @@
 module ItemDef where
 
 import GameDef
-import Data.Set
+import Data.Set as Set
 
 data ItemDef = ItemDef { defId :: DefId
                        , sDesc :: String
@@ -13,4 +13,4 @@ instance GameDef ItemDef where
     defId def = ItemDef.defId def
     sDesc def = ItemDef.sDesc def
     lDesc def = ItemDef.lDesc def
-    matches def keyword = Data.Set.member keyword $ ItemDef.keywords def
+    matches def keyword = Set.member keyword $ ItemDef.keywords def
