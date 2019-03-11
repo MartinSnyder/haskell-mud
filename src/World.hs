@@ -66,9 +66,9 @@ data World = World { nextMobId :: MobId
                    , connections :: Map.Map UserId Connection
                    }
 
-roomListToMap :: [RoomDef] -> Map.Map DefId Room
-roomListToMap roomDefs =
-    foldl (\ acc roomDef -> Map.insert (GameDef.defId roomDef) (buildRoom roomDef) acc) Map.empty roomDefs
+roomListToMap :: [RoomDef] -> Map.Map DefId PassageDef -> Map.Map DefId Room
+roomListToMap roomDefs passageDefs =
+    foldl (\ acc roomDef -> Map.insert (GameDef.defId roomDef) (buildRoom roomDef passageDefs) acc) Map.empty roomDefs
 
 passageListToMap :: [PassageDef] -> Map.Map DefId Passage
 passageListToMap passageDefs =
@@ -76,7 +76,12 @@ passageListToMap passageDefs =
 
 buildWorld :: WorldDef -> Map.Map String RoomProcedure -> World
 buildWorld worldDef roomProcs =
-    World 0 (entry worldDef) (roomListToMap $ roomDefs worldDef) (passageListToMap $ passageDefs worldDef) Map.empty roomProcs Map.empty
+    let
+        entryId = entry worldDef
+        passages = passageListToMap $ passageDefs worldDef
+        passageDefMap = foldl (\ acc passageDef -> Map.insert (GameDef.defId passageDef) passageDef acc) Map.empty $ passageDefs worldDef
+        rooms = roomListToMap (roomDefs worldDef) passageDefMap
+    in  World 0 entryId rooms passages Map.empty roomProcs Map.empty
 
 getEntry :: World -> Room
 getEntry world =

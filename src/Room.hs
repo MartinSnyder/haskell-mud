@@ -6,6 +6,7 @@ import Data.Map as Map
 import GameDef
 import GameObj
 import RoomDef
+import PassageDef
 import Link
 import Mob
 import Item
@@ -21,10 +22,10 @@ instance GameObj Room where
     lDesc room = GameDef.lDesc $ Room.def room
     matches room keyword = GameDef.matches (Room.def room) keyword
 
-buildRoom :: RoomDef -> Room
-buildRoom roomDef =
+buildRoom :: RoomDef -> Map DefId PassageDef -> Room
+buildRoom roomDef passageDefs =
     let
-        links = fmap Link $ RoomDef.links roomDef
+        links = fmap (buildLink passageDefs) $ RoomDef.links roomDef
         items = fmap (\itemDef -> Item itemDef) (RoomDef.initialItems roomDef)
     in
         Room roomDef [] items links
