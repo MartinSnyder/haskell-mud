@@ -8,12 +8,12 @@ WorldDef { entry = (0,0)
                                 , sDesc = "a flat stone"
                                 , lDesc = "Time has smoothed this stone to have a perfectly flat surface"
                                 , keywords = fromList ["flat","stone"]
-                                }
+                        }
                     ]
                     , links = [
                         LinkDef { name = "Down"
                                 , targetRoomId = (1,0)
-                                }
+                        }
                     ]
                     , procName = Nothing
             }
@@ -24,7 +24,7 @@ WorldDef { entry = (0,0)
                     , links = [
                         LinkDef { name = "South"
                                 , targetRoomId = (1,1)
-                                }
+                        }
                     ]
                     , procName = Nothing
             }
@@ -35,9 +35,21 @@ WorldDef { entry = (0,0)
                     , links = [
                         LinkDef { name = "North"
                                 , targetRoomId = (1,0)
-                                }
+                        }
                     ]
                     , procName = Just "unstableFloor"
             }
-        ]
+         ]
+         , passageDefs = [
+                PassageDef { sDesc = "a translucent passage through the soup, filled with goo"
+                           , links = [ LinkDef2 { from = (0, 0), to = (1, 0), direction = Down } ]
+                           , passageType = Unrestricted
+                }
+              , PassageDef { sDesc = "a dirt path through the grass"
+                           , links = [ LinkDef2 { from = (1, 0), to = (1, 1), direction = South }
+                                     , LinkDef2 { from = (1, 1), to = (1, 0), direction = North }
+                           ]
+                           , passageType = Unrestricted
+              }
+         ]
     }

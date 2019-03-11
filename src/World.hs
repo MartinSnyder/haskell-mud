@@ -39,7 +39,7 @@ import Target
 data MessageDestination = MsgGlobal | MsgRoom | MsgSpecificRoom DefId
 
 data CommandArguments = CommandArguments { actor :: Mob
-                                         , room :: Room
+                                         , room :: Room -- Remove?
                                          , target1 :: Target
                                          , target2 :: Target
                                          , xtra :: String
@@ -252,12 +252,12 @@ sendMessageTo (CommandArguments actor room target1 target2 xtra) msgDest message
     case msgDest of
         MsgGlobal ->
             Right $ world { connections = Map.map (\ p -> sendText (resolveMessage actor target1 target2 xtra message p) p) $ World.connections world }
-        MsgRoom ->
-            sendMessageRoom actor target1 target2 xtra message room world
-        MsgSpecificRoom targetRoomId ->
-            do
-                targetRoom <- getRoom targetRoomId world
-                sendMessageRoom actor target1 target2 xtra message targetRoom world
+        MsgRoom -> do
+            targetRoom <- getRoom (locationId actor) world
+            sendMessageRoom actor target1 target2 xtra message targetRoom world
+        MsgSpecificRoom targetRoomId -> do
+            targetRoom <- getRoom targetRoomId world
+            sendMessageRoom actor target1 target2 xtra message targetRoom world
 
 -----------------------------
 -- Retrieving output for players
