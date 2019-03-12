@@ -24,7 +24,7 @@ instance GameObj Mob where
         Right pd -> PlayerData.name pd
     lDesc mob = case Mob.base mob of
         Left def -> GameDef.lDesc def
-        Right pd -> "A player named " ++ PlayerData.name pd
+        Right pd -> "A player named " ++ PlayerData.name pd ++ "."
     matches mob keyword = case Mob.base mob of
         Left def -> GameDef.matches def keyword
         Right pd -> keyword == (map toLower $ PlayerData.name pd)

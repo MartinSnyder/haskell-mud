@@ -98,11 +98,15 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                     let text = foldl (\acc s -> acc ++ " " ++ s) "Inventory:" (fmap (GameObj.sDesc) (Mob.items $ actor args))
                     in  sendTextMob (actor args) text world
                 )
-                , CommandEntry "look" Nothing Nothing (\ args world ->
-                    do
-                        room <- getRoom (locationId $ actor args) world
-                        mobs <- getRoomMobs room world
-                        sendTextMob (actor args) (lookRoomLong room mobs) world
+                , CommandEntry "look" (Just (FindInRoom, findAllTypes)) Nothing (\ args world ->
+                    case target1 args of
+                        TargetNone -> do
+                            room <- getRoom (locationId $ actor args) world
+                            mobs <- getRoomMobs room world
+                            sendTextMob (actor args) (lookRoomLong room mobs) world
+                        TargetItem item -> sendTextMob (actor args) (GameObj.lDesc item) world
+                        TargetMob mob   -> sendTextMob (actor args) (GameObj.lDesc mob) world
+                        TargetLink link -> sendTextMob (actor args) (GameObj.lDesc link) world
                 )
                 , CommandEntry "exits" Nothing Nothing (\ args world ->
                     do
