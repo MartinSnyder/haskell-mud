@@ -23,10 +23,20 @@ instance GameDef PassageDef where
     lDesc def = PassageDef.lDesc def
     matches def keyword = Set.member keyword $ PassageDef.keywords def
 
+
+canClose :: PassageType -> Bool
+canClose (Closable _ ) = True
+canClose (Lockable _ _ _) = True
+canClose _ = False
+
 isClosed :: PassageType -> Bool
 isClosed (Closable True) = True
 isClosed (Lockable True _ _) = True
 isClosed _ = False
+
+canLock :: PassageType -> Bool
+canLock (Lockable _ _ _) = True
+canLock _ = False
 
 isLocked :: PassageType -> Bool
 isLocked (Lockable _ True _) = True

@@ -20,7 +20,7 @@ repl world = do
     world' <- printOutput userId world $ addPlayerIfAbsent userId world
     gameLoop world' userId
 
-gameLoop :: World -> UserId -> IO()
+gameLoop :: World -> UserId -> IO ()
 gameLoop world userId = do
   input <- readInput world userId
   case input of

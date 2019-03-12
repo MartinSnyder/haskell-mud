@@ -6,8 +6,10 @@ module World ( World
              , buildWorld
              , addPlayerIfAbsent
              , getRoom
+             , getPassage
              , getRoomMobs
              , updateRoom
+             , updatePassage
              , updateMob
              , updateWorld
              , doCommand
@@ -31,9 +33,7 @@ import WorldDef
 import PlayerData
 import GameObj
 import Room
-import Link
 import Mob
-import Item
 import Passage
 import Connection
 import Message
@@ -144,6 +144,12 @@ getMob mobId world =
         Just mob -> Right mob
         Nothing -> Left $ "Cannot find mob " ++ show mobId
 
+getPassage :: DefId -> World -> Either String Passage
+getPassage passageId world =
+    case Map.lookup passageId $ passages world of
+        Just passage -> Right passage
+        Nothing -> Left $ "Cannot find passage " ++ show passageId
+
 getRoomMobs :: Room -> World -> Either String [Mob]
 getRoomMobs room world =
     mobIdsToMobs (mobIds room) world
@@ -161,6 +167,12 @@ updateRoom f roomId world = do
     room <- getRoom roomId world
     nextRoom <- f room
     return world { rooms = Map.insert (Room.roomId nextRoom) nextRoom (rooms world) }
+
+updatePassage :: (Passage -> Either String Passage) -> DefId -> World -> Either String World
+updatePassage f passageId world = do
+    passage <- getPassage passageId world
+    nextPassage <- f passage
+    return world { passages = Map.insert (Passage.passageId nextPassage) nextPassage (passages world) }
 
 updateMob :: (Mob -> Either String Mob) -> MobId -> World -> Either String World
 updateMob f mobId world = do

@@ -11,6 +11,7 @@ import Link
 import LinkDef
 import GameObj
 import Room
+import Passage
 import RoomDef
 import Message
 import PlayerData
@@ -50,6 +51,20 @@ lookRoomLong room roomMobs =
                      ]
     in combine components
 
+testPassage :: Link -> World -> (Passage -> Bool) -> Either String Bool
+testPassage link world predicate =
+    case (LinkDef.passageId $ Link.def link) of
+        Nothing -> Right False
+        Just passageId -> do
+            passage <- getPassage passageId world
+            return $ predicate passage
+
+updateLink :: (Passage -> Either String Passage) -> Link -> World -> Either String World
+updateLink f link world =
+    case (LinkDef.passageId $ Link.def link) of
+        Nothing -> Left $ "There is no passage associated with this link"
+        Just passageId -> updatePassage f passageId world
+
 commandList =   [ CommandEntry "help" targetNothing targetNothing (\ _ _ ->
                     let commands = sort $ map World.name commandList
                     in  Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
@@ -57,15 +72,35 @@ commandList =   [ CommandEntry "help" targetNothing targetNothing (\ _ _ ->
                 , CommandEntry "go" [FindRoomLink] targetNothing (\ args world -> do
                     room <- getRoom (locationId $ actor args) world
                     link <- asLink $ target1 args
+                    passageIsClosed <- testPassage link world isClosed
+                    _ <- if passageIsClosed then Left $ (GameObj.sDesc link) ++ " is closed." else Right ()
                     destinationRoomId <- return $ targetRoomId $ Link.def link
                     destinationRoom <- getRoom destinationRoomId world
                     destinationRoomMobs <- getRoomMobs destinationRoom world
                     updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor args) $ locationId $ actor args
-                                      , updateRoom (addMobId $ Mob.id $ actor args) $ destinationRoomId
+                                      , updateRoom (addMobId $ Mob.id $ actor args) destinationRoomId
                                       , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "leave" "left", Const "the room via ", Desc Target1, Const "."]
                                       , sendMessageTo args (MsgRoom destinationRoomId) [Desc Actor, Sur " " $ Verb Actor "arrive" "arrives", Const $ "from " ++ (GameObj.sDesc room), Const "."]
                                       , updateMob (\mob -> Right $ mob { locationId = destinationRoomId }) $ Mob.id $ actor args
                                       , sendTextMob (actor args) $ lookRoomShort destinationRoom destinationRoomMobs
+                                      ]
+                )
+                , CommandEntry "open" [FindRoomLink] targetNothing (\ args world -> do
+                    room <- getRoom (locationId $ actor args) world
+                    link <- asLink $ target1 args
+                    _ <- if not $ canClose link then Left $ (GameObj.sDesc link) ++ " does not open or close." else Right ()
+                    updateWorld world [ updateLink (\p -> if isClosed p then Right $ p { isClosed = False }
+                                                                        else Left $ (GameObj.sDesc p) ++ " is already open.") link
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "open" "opens", Desc Target1, Const "."]
+                                      ]
+                )
+                , CommandEntry "close" [FindRoomLink] targetNothing (\ args world -> do
+                    room <- getRoom (locationId $ actor args) world
+                    link <- asLink $ target1 args
+                    _ <- if not $ canClose link then Left $ (GameObj.sDesc link) ++ " does not open or close." else Right ()
+                    updateWorld world [ updateLink (\p -> if isClosed p then Left $ (GameObj.sDesc p) ++ " is already closed."
+                                                                        else Right $ p { isClosed = True }) link
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "close" "closes", Desc Target1, Const "."]
                                       ]
                 )
                 , CommandEntry "get" [FindRoomItem] targetNothing (\ args world -> do

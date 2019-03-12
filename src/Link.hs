@@ -30,6 +30,18 @@ buildLink passageDefs linkDef =
     Link linkDef ((passageId linkDef) >>= (\id -> Map.lookup id passageDefs))
 
 exitString :: Link -> String
-exitString link =
-    let label = getLabel $ direction $ def link
-    in  label ++ " - " ++ (GameObj.sDesc link)
+exitString link = case direction $ def link of
+    Enter -> case passageDef link of
+        Just passageDef -> GameDef.sDesc passageDef
+        Nothing -> "Broken Exit"
+    dir -> (getLabel dir) ++ " - " ++ (GameObj.sDesc link)
+
+canClose :: Link -> Bool
+canClose link = case passageDef link of
+    Just pDef -> PassageDef.canClose $ passageType pDef
+    Nothing -> False
+
+canLock :: Link -> Bool
+canLock link = case passageDef link of
+    Just pDef -> PassageDef.canLock $ passageType pDef
+    Nothing -> False

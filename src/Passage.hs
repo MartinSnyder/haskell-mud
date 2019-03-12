@@ -17,3 +17,7 @@ instance GameObj Passage where
 buildPassage :: PassageDef -> Passage
 buildPassage def =
     Passage def (PassageDef.isClosed $ passageType def) (PassageDef.isLocked $ passageType def)
+
+passageId :: Passage -> DefId
+passageId passage = GameDef.defId (def passage)
+    

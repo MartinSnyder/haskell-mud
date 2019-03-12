@@ -17,7 +17,7 @@ WorldDef { entry = (0,0)
             }
             , RoomDef { defId = (1,0)
                       , name = "Alpha Hill"
-                      , desc = "A quaint grassy hill. A dirt path to the south leads to a coastal town."
+                      , desc = "A quaint grassy hill. A dirt path to the south leads to a small structure."
                       , initialItems = []
                       , links = [
                             LinkDef { direction = South , targetRoomId = (1,1), passageId = Just (1, 1) }
@@ -25,11 +25,32 @@ WorldDef { entry = (0,0)
                       , procName = Nothing
             }
             , RoomDef { defId = (1,1)
-                      , name = "A Dusty path"
+                      , name = "A dusty path"
                       , desc = "The dirt of the path is beaten flat and firm, but the dust still manages to cover your shoes."
                       , initialItems = []
                       , links = [
-                            LinkDef { direction = North , targetRoomId = (1,0), passageId = Nothing }
+                            LinkDef { direction = North , targetRoomId = (1,0), passageId = Just (1, 1) }
+                          , LinkDef { direction = South , targetRoomId = (1,2), passageId = Nothing }
+                      ]
+                      , procName = Nothing
+            }
+            , RoomDef { defId = (1,2)
+                      , name = "Outside a stone building entrance"
+                      , desc = "A stone building looms before you. It doesn't look like anyone has been here for a long time."
+                      , initialItems = []
+                      , links = [
+                            LinkDef { direction = North , targetRoomId = (1,1), passageId = Nothing }
+                          , LinkDef { direction = Enter, targetRoomId = (1,3), passageId = Just (1, 2) }
+                      ]
+                      , procName = Just "unstableFloor"
+            }
+            , RoomDef { defId = (1,3)
+                      , name = "A Stone hallway"
+                      , desc = "A damp and musty smell permeates this cramped hallway. You leave footprints in the dust as you walk. A small ladder leads to a trap door in the ceiling."
+                      , initialItems = []
+                      , links = [
+                            LinkDef { direction = North , targetRoomId = (1,2), passageId = Just (1, 2) }
+                          , LinkDef { direction = East, targetRoomId = (1,4), passageId = Nothing }
                       ]
                       , procName = Just "unstableFloor"
             }
@@ -46,6 +67,12 @@ WorldDef { entry = (0,0)
                            , lDesc = "The dirt path through the grass."
                            , keywords = fromList ["dirt","path"]
                            , passageType = Unrestricted
+              }
+              , PassageDef { defId = (1, 2)
+                           , sDesc = "a plain wooden door"
+                           , lDesc = "Faded, warped boards are held together by rusted metal bands. There is a metal locking mechanism on the door, but it appears to be completely broken."
+                           , keywords = fromList ["door", "wooden", "plain"]
+                           , passageType = Closable True
               }
          ]
     }
