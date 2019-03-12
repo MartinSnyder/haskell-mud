@@ -17,5 +17,5 @@ data RoomDef = RoomDef { defId :: DefId
 instance GameDef RoomDef where
     defId def = RoomDef.defId def
     sDesc def = RoomDef.name def
-    lDesc def = (RoomDef.name def) ++ "\n" ++ (RoomDef.desc def)
+    lDesc def = RoomDef.desc def
     matches def keyword = False

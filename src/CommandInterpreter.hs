@@ -20,6 +20,36 @@ data Command = Noop
              | Invalid String
              | ExecuteCommand CommandEntry String String String
 
+formatContents :: String -> String -> (a -> String) -> [a] -> String
+formatContents empty label fmt contents = case contents of
+    [] -> empty
+    first : rest -> foldl (\acc s -> acc ++ ", " ++ s) (label ++ fmt first) (fmap fmt $ rest)
+
+combine :: [String] -> String
+combine strings = case strings of
+    [] -> ""
+    first : rest -> foldl (\acc el -> acc ++ "\n" ++ el) first $ filter (/= "") rest
+
+lookRoomShort :: Room -> [Mob] -> String
+lookRoomShort room roomMobs =
+    let
+        components = [ GameObj.sDesc room
+                     , formatContents "" "Occupants: " GameObj.sDesc roomMobs
+                     , formatContents "" "Items:     " GameObj.sDesc $ Room.items room
+                     ]
+    in combine components
+
+lookRoomLong :: Room -> [Mob] -> String
+lookRoomLong room roomMobs =
+    let
+        components = [ GameObj.sDesc room
+                     , GameObj.lDesc room
+                     , formatContents "" "Exits:     " exitString $ Room.links room
+                     , formatContents "" "Occupants: " GameObj.sDesc roomMobs
+                     , formatContents "" "Items:     " GameObj.sDesc $ Room.items room
+                     ]
+    in combine components
+
 commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                     let commands = sort $ map World.name commandList
                     in  Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
@@ -28,11 +58,14 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                     room <- getRoom (locationId $ actor args) world
                     link <- asLink $ target1 args
                     destinationRoomId <- return $ targetRoomId $ Link.def link
+                    destinationRoom <- getRoom destinationRoomId world
+                    destinationRoomMobs <- getRoomMobs destinationRoom world
                     updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor args) $ locationId $ actor args
+                                      , updateRoom (addMobId $ Mob.id $ actor args) $ destinationRoomId
                                       , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "leave" "left", Const "the room via ", Desc Target1, Const "."]
                                       , sendMessageTo args (MsgRoom destinationRoomId) [Desc Actor, Sur " " $ Verb Actor "arrive" "arrives", Const $ "from " ++ (GameObj.sDesc room), Const "."]
-                                      , updateRoom (addMobId $ Mob.id $ actor args) $ destinationRoomId
                                       , updateMob (\mob -> Right $ mob { locationId = destinationRoomId }) $ Mob.id $ actor args
+                                      , sendTextMob (actor args) $ lookRoomShort destinationRoom destinationRoomMobs
                                       ]
                 )
                 , CommandEntry "get" (Just (FindInRoom, [FindItem])) Nothing (\ args world -> do
@@ -69,12 +102,12 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                     do
                         room <- getRoom (locationId $ actor args) world
                         mobs <- getRoomMobs room world
-                        elements <- return [ foldl (\acc s -> acc ++ " " ++ s) "Exits:" (fmap GameObj.sDesc $ Room.links room)
-                                           , foldl (\acc s -> acc ++ " " ++ s) "Occupants:" (fmap GameObj.sDesc mobs)
-                                           , foldl (\acc s -> acc ++ " " ++ s) "Items:" (fmap GameObj.sDesc $ Room.items room)
-                                           ]
-                        text <- return $ foldl (\acc el -> acc ++ "\n" ++ el) (GameObj.lDesc room) elements
-                        sendTextMob (actor args) text world
+                        sendTextMob (actor args) (lookRoomLong room mobs) world
+                )
+                , CommandEntry "exits" Nothing Nothing (\ args world ->
+                    do
+                        room <- getRoom (locationId $ actor args) world
+                        sendTextMob (actor args) (formatContents "There are no available exits." "Exits: " exitString $ Room.links room) world
                 )
                 , CommandEntry "yell" Nothing Nothing (\ args world ->
                     if xtra args == "" then Left $ "What do you want to yell?"

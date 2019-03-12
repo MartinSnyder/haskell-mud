@@ -28,3 +28,8 @@ instance GameObj Link where
 buildLink :: Map DefId PassageDef -> LinkDef ->Link
 buildLink passageDefs linkDef =
     Link linkDef ((passageId linkDef) >>= (\id -> Map.lookup id passageDefs))
+
+exitString :: Link -> String
+exitString link =
+    let label = getLabel $ direction $ def link
+    in  label ++ " - " ++ (GameObj.sDesc link)
