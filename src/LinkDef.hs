@@ -1,28 +1,37 @@
 module LinkDef where
 
+import Data.Set as Set
 import Data.Char (toLower)
 
 import GameDef
 import GameObj
 
-data Direction = North | South | East | West | Up | Down | Enter String deriving (Show, Read)
+data Direction = North | South | East | West | Up | Down | Enter String (Set String) deriving (Show, Read)
 
 data LinkDef = LinkDef { direction :: Direction
                        , targetRoomId :: DefId
                        , passageId :: Maybe DefId
                        } deriving (Show, Read)
 
-getKeyword :: Direction -> String
-getKeyword North = "North"
-getKeyword South = "South"
-getKeyword East  = "East"
-getKeyword West  = "West"
-getKeyword Up    = "Up"
-getKeyword Down  = "Down"
-getKeyword (Enter key) = key
+getLabel :: Direction -> String
+getLabel North = "North"
+getLabel South = "South"
+getLabel East  = "East"
+getLabel West  = "West"
+getLabel Up    = "Up"
+getLabel Down  = "Down"
+getLabel (Enter _ _) = error "Should never call getLabel on 'Enter' direction"
+
+getKeywords :: Direction -> Set String
+getKeywords (Enter _ keywords) = keywords
+getKeywords dir = Set.singleton (fmap toLower $ getLabel dir)
 
 instance GameDef LinkDef where
     defId def = (-1, -1)
-    sDesc def = getKeyword $ LinkDef.direction def
-    lDesc def = getKeyword $ LinkDef.direction def
-    matches def keyword = keyword == (map toLower $ getKeyword $ direction def)
+    sDesc def = case LinkDef.direction def of
+        Up -> "an opening in the ceiling"
+        Down -> "an opening in the floor"
+        Enter sDesc _ -> sDesc
+        dir -> "a passage to the " ++ (getLabel dir)
+    lDesc def = "A passage " ++ GameDef.sDesc def
+    matches def keyword = Set.member keyword $ getKeywords $ direction def

@@ -25,12 +25,13 @@ commandList =   [ CommandEntry "help" Nothing Nothing (\ _ _ ->
                     in  Left $ foldl (\acc s -> acc ++ " " ++ s) "Available Commands:" commands
                 )
                 , CommandEntry "go" (Just (FindInRoom, [FindLink])) Nothing (\ args world -> do
+                    room <- getRoom (locationId $ actor args) world
                     link <- asLink $ target1 args
                     destinationRoomId <- return $ targetRoomId $ Link.def link
                     updateWorld world [ updateRoom (removeMobId $ Mob.id $ actor args) $ locationId $ actor args
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "leave" "left", Const "the room via ", Desc Target1, Const "."]
+                                      , sendMessageTo args (MsgRoom destinationRoomId) [Desc Actor, Sur " " $ Verb Actor "arrive" "arrives", Const $ "from " ++ (GameObj.sDesc room), Const "."]
                                       , updateRoom (addMobId $ Mob.id $ actor args) $ destinationRoomId
-                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "leave" "left", Const "the room."]
-                                      , sendMessageTo args (MsgRoom destinationRoomId) [Desc Actor, Sur " " $ Verb Actor "enter" "enters", Desc Target1, Const "."]
                                       , updateMob (\mob -> Right $ mob { locationId = destinationRoomId }) $ Mob.id $ actor args
                                       ]
                 )

@@ -10,7 +10,7 @@ import Mob
 import Connection
 import Target
 
-data Source = Actor | Target1 | Target2
+data Source = Actor | Target1 | Target2 deriving (Show, Read)
 
 data Segment = Sp
              | Sur String Segment
@@ -21,6 +21,7 @@ data Segment = Sp
              | Verb Source String String
              | Pro Source
              | PossPro Source
+             deriving (Show, Read)
 
 type Message = [Segment]
 
