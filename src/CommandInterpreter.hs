@@ -114,12 +114,25 @@ buildCommand command rest =
     in
         ExecuteCommand command keyword1 keyword2 rest''
 
+replaceShortcuts :: String -> String
+replaceShortcuts line = 
+    case strip line of
+        '\'' : rest -> "say " ++ rest          -- preserve original case in this circumstance
+        _ -> case strip $ fmap toLower line of -- case insensitive comparisons
+            "north" -> "go north"
+            "south" -> "go south"
+            "east"  -> "go east"
+            "west"  -> "go west"
+            "up"    -> "go up"
+            "down"  -> "go down"
+            _ -> line -- Unmodified
+
 parseCommand :: String -> Command
 parseCommand "" = Noop
 parseCommand line =
     let
         -- Important: This is the entry point for all input.
-        (firstWord, rest) = getFirstWord $ strip line
+        (firstWord, rest) = getFirstWord $ strip $ replaceShortcuts line
     in
         -- Do an exact lookup in the map. If that doesn't work, do a startswith lookup against
         -- the list. This lets users abbreviate commands, but also specify a command for an exact
