@@ -42,17 +42,78 @@ WorldDef { entry = (0,0)
                             LinkDef { direction = North , targetRoomId = (1,1), passageId = Nothing }
                           , LinkDef { direction = Enter, targetRoomId = (1,3), passageId = Just (1, 2) }
                       ]
-                      , procName = Just "unstableFloor"
+                      , procName = Nothing
             }
             , RoomDef { defId = (1,3)
-                      , name = "A Stone hallway"
+                      , name = "A stone hallway"
                       , desc = "A damp and musty smell permeates this cramped hallway. You leave footprints in the dust as you walk. A small ladder leads to a trap door in the ceiling."
                       , initialItems = []
                       , links = [
                             LinkDef { direction = North , targetRoomId = (1,2), passageId = Just (1, 2) }
-                          , LinkDef { direction = East, targetRoomId = (1,4), passageId = Nothing }
+                          , LinkDef { direction = Up, targetRoomId = (1,4), passageId = Nothing }
+                          , LinkDef { direction = East, targetRoomId = (1,5), passageId = Nothing }
+                      ]
+                      , procName = Nothing
+            }
+            , RoomDef { defId = (1,4)
+                      , name = "The West gallery"
+                      , desc = "You can see down into the courtyard below, which appears to have been setup for some sort of sporting event."
+                      , initialItems = [
+                          ItemDef { defId = (0,1)
+                                  , sDesc = "a marble railing"
+                                  , lDesc = "This polished marble railing is all that prevents you from falling into the courtyard below."
+                                  , keywords = fromList ["marble","railing"]
+                          }
+                      ]
+                      , links = [
+                            LinkDef { direction = Down , targetRoomId = (1,3), passageId = Nothing }
+                      ]
+                      , procName = Just "lookOutBelow"
+            }
+            , RoomDef { defId = (1,5)
+                      , name = "The West courtyard"
+                      , desc = "You stand in a large courtyard with a floor made of large stones. The stones are a little unstable and wobble as you walk over them."
+                      , initialItems = []
+                      , links = [
+                            LinkDef { direction = East , targetRoomId = (1,6), passageId = Nothing }
+                          , LinkDef { direction = West , targetRoomId = (1,3), passageId = Nothing }
                       ]
                       , procName = Just "unstableFloor"
+            }
+            , RoomDef { defId = (1,6)
+                      , name = "The East courtyard"
+                      , desc = "You stand in a large courtyard with a floor made of large stones. The stones are a little unstable and wobble as you walk over them."
+                      , initialItems = []
+                      , links = [
+                            LinkDef { direction = East , targetRoomId = (1,7), passageId = Just (1, 3) }
+                          , LinkDef { direction = West , targetRoomId = (1,5), passageId = Nothing }
+                      ]
+                      , procName = Just "unstableFloor"
+            }
+            , RoomDef { defId = (1,7)
+                      , name = "A stone antechamber"
+                      , desc = "A small room with stone walls. Empty sconces adorn the walls, but the torches they once held have long since rotted away."
+                      , initialItems = []
+                      , links = [
+                            LinkDef { direction = West , targetRoomId = (1,5), passageId = Just (1, 3) }
+                          , LinkDef { direction = Up , targetRoomId = (1,8), passageId = Nothing }
+                      ]
+                      , procName = Nothing
+            }
+            , RoomDef { defId = (1,8)
+                      , name = "The East gallery"
+                      , desc = "You can see down into the courtyard below, which appears to have been setup for some sort of sporting event."
+                      , initialItems = [
+                          ItemDef { defId = (0,2)
+                                  , sDesc = "a rusty metal key"
+                                  , lDesc = "A large but otherwise nondescript key."
+                                  , keywords = fromList ["rusty","metal","key"]
+                          }
+                      ]
+                      , links = [
+                            LinkDef { direction = Down , targetRoomId = (1,7), passageId = Nothing }
+                      ]
+                      , procName = Nothing
             }
          ]
          , passageDefs = [
@@ -72,6 +133,12 @@ WorldDef { entry = (0,0)
                            , sDesc = "a plain wooden door"
                            , lDesc = "Faded, warped boards are held together by rusted metal bands. There is a metal locking mechanism on the door, but it appears to be completely broken."
                            , keywords = fromList ["door", "wooden", "plain"]
+                           , passageType = Closable True
+              }
+              , PassageDef { defId = (1, 3)
+                           , sDesc = "a strong metal gate"
+                           , lDesc = "This metal gate is formidable and mounted securely to the stone archway that surrounds it. A complicated locking mechanism controls the latch."
+                           , keywords = fromList ["metal", "gate"]
                            , passageType = Closable True
               }
          ]
