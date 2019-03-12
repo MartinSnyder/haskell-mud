@@ -50,8 +50,8 @@ data CommandArguments = CommandArguments { actor :: Mob
 type CommandExecutor = CommandArguments -> World -> Either String World
 
 data CommandEntry = CommandEntry { name :: String
-                                 , target1Spec :: Maybe (FindIn, [FindType])
-                                 , target2Spec :: Maybe (FindIn, [FindType])
+                                 , target1Spec :: [FindType]
+                                 , target2Spec :: [FindType]
                                  , execute :: CommandExecutor
                                  }
 
@@ -172,14 +172,13 @@ updateWorld :: World -> [(World -> Either String World)] -> Either String World
 updateWorld world ops =
     foldl (\ acc op -> acc >>= op) (Right world) ops
 
-resolveTarget :: Maybe (FindIn, [FindType]) -> String -> Mob -> Room -> [Mob] -> Either String Target
-resolveTarget targetSpec keyword actor room roomMobs =
-    case fmap (\(findIn, findTypes) -> findTarget findIn findTypes keyword actor room roomMobs) targetSpec of
-        Just TargetNone ->
-            if (keyword == "") then Right TargetNone
-                               else Left $ "Could not find anything matching '" ++ keyword ++ ".'"
-        Just target -> Right target
-        _           -> Right TargetNone
+resolveTarget :: [FindType] -> String -> Mob -> Room -> [Mob] -> Either String Target
+resolveTarget [] _ _ _ _ = Right TargetNone
+resolveTarget _ "" _ _ _ = Right TargetNone
+resolveTarget findTypes keyword actor room roomMobs =
+    case findTarget findTypes keyword actor room roomMobs of
+        TargetNone -> Left $ "Could not find anything matching '" ++ keyword ++ ".'"
+        target     -> Right target
 
 -- Execute procedure tied to the current room
 defaultRoomProc :: RoomProcedure
