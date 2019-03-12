@@ -15,23 +15,23 @@ WorldDef { entry = (0,0)
                     ]
                     , procName = Nothing
             }
-          , RoomDef { defId = (1,0)
-                    , name = "Alpha Hill"
-                    , desc = "A quaint grassy hill. A dirt path to the south leads to a coastal town."
-                    , initialItems = []
-                    , links = [
-                        LinkDef { direction = South , targetRoomId = (1,1), passageId = Just (1, 1) }
-                    ]
-                    , procName = Nothing
+            , RoomDef { defId = (1,0)
+                      , name = "Alpha Hill"
+                      , desc = "A quaint grassy hill. A dirt path to the south leads to a coastal town."
+                      , initialItems = []
+                      , links = [
+                            LinkDef { direction = South , targetRoomId = (1,1), passageId = Just (1, 1) }
+                      ]
+                      , procName = Nothing
             }
-          , RoomDef { defId = (1,1)
-                    , name = "A Dusty path"
-                    , desc = "The dirt of the path is beaten flat and firm, but the dust still manages to cover your shoes."
-                    , initialItems = []
-                    , links = [
-                        LinkDef { direction = North , targetRoomId = (1,0), passageId = Nothing }
-                    ]
-                    , procName = Just "unstableFloor"
+            , RoomDef { defId = (1,1)
+                      , name = "A Dusty path"
+                      , desc = "The dirt of the path is beaten flat and firm, but the dust still manages to cover your shoes."
+                      , initialItems = []
+                      , links = [
+                            LinkDef { direction = North , targetRoomId = (1,0), passageId = Nothing }
+                      ]
+                      , procName = Just "unstableFloor"
             }
          ]
          , passageDefs = [
