@@ -13,6 +13,7 @@ import GameObj
 import Item
 import Room
 import Passage
+import qualified PassageDef
 import RoomDef
 import Message
 import PlayerData
@@ -47,6 +48,8 @@ commandList =   [ CommandEntry "help" targetNothing targetNothing (\ _ _ ->
                     room <- getRoom (locationId $ actor args) world
                     link <- asLink $ target1 args
                     _ <- if not $ canClose link then Left $ (GameObj.sDesc link) ++ " does not open or close." else Right ()
+                    passageIsLocked <- testPassage link world isLocked
+                    _ <- if passageIsLocked then Left $ (GameObj.sDesc link) ++ " is locked." else Right ()
                     updateWorld world [ updateLink (\p -> if isClosed p then Right $ p { isClosed = False }
                                                                         else Left $ (GameObj.sDesc p) ++ " is already open.") link
                                       , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "open" "opens", Desc Target1, Const "."]
@@ -59,6 +62,40 @@ commandList =   [ CommandEntry "help" targetNothing targetNothing (\ _ _ ->
                     updateWorld world [ updateLink (\p -> if isClosed p then Left $ (GameObj.sDesc p) ++ " is already closed."
                                                                         else Right $ p { isClosed = True }) link
                                       , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "close" "closes", Desc Target1, Const "."]
+                                      ]
+                )
+                , CommandEntry "unlock" [FindRoomLink] [FindActorItem] (\ args world -> do
+                    room <- getRoom (locationId $ actor args) world
+                    link <- asLink $ target1 args
+                    key <- asItem $ target2 args
+                    updateWorld world [ updateLink (\p -> case (isClosed p, isLocked p, PassageDef.passageType $ Passage.def p) of
+                                                            (_, _, PassageDef.Unrestricted) -> Left $ (GameObj.sDesc p) ++ " does not have a lock."
+                                                            (_, _, PassageDef.Closable _)   -> Left $ (GameObj.sDesc p) ++ " does not have a lock."
+                                                            (False, _, _)                   -> Left $ (GameObj.sDesc p) ++ " is already unlocked and open."
+                                                            (_, False, _)                   -> Left $ (GameObj.sDesc p) ++ " is already unlocked."
+                                                            (_, _, PassageDef.Lockable _ _ keyId) -> if keyId == (itemId key) then
+                                                                                                        Right $ p { isLocked = False }
+                                                                                                     else
+                                                                                                        Left $ (GameObj.sDesc key) ++ " does not fit the lock."
+                                                   ) link
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "unlock" "unlocks", Desc Target1, Const "."]
+                                      ]
+                )
+                , CommandEntry "lock" [FindRoomLink] [FindActorItem] (\ args world -> do
+                    room <- getRoom (locationId $ actor args) world
+                    link <- asLink $ target1 args
+                    key <- asItem $ target2 args
+                    updateWorld world [ updateLink (\p -> case (isClosed p, isLocked p, PassageDef.passageType $ Passage.def p) of
+                                                            (_, _, PassageDef.Unrestricted) -> Left $ (GameObj.sDesc p) ++ " does not have a lock."
+                                                            (_, _, PassageDef.Closable _)   -> Left $ (GameObj.sDesc p) ++ " does not have a lock."
+                                                            (False, _, _)                   -> Left $ (GameObj.sDesc p) ++ " can't be locked because it is open."
+                                                            (_, True, _)                    -> Left $ (GameObj.sDesc p) ++ " is already locked."
+                                                            (_, _, PassageDef.Lockable _ _ keyId) -> if keyId == (itemId key) then
+                                                                                                        Right $ p { isLocked = True }
+                                                                                                     else
+                                                                                                        Left $ (GameObj.sDesc key) ++ " does not fit the lock."
+                                                   ) link
+                                      , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "lock" "lock", Desc Target1, Const "."]
                                       ]
                 )
                 , CommandEntry "get" [FindRoomItem] targetNothing (\ args world -> do

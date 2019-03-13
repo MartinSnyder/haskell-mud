@@ -104,7 +104,7 @@ WorldDef { entry = (0,0)
                           }
                       ]
                       , links = [
-                            LinkDef { direction = West , targetRoomId = (1,5), passageId = Just (1, 3) }
+                            LinkDef { direction = West , targetRoomId = (1,6), passageId = Just (1, 3) }
                           , LinkDef { direction = Up , targetRoomId = (1,8), passageId = Nothing }
                       ]
                       , procName = Nothing
