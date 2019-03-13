@@ -7,6 +7,7 @@ data ItemDef = ItemDef { defId :: DefId
                        , sDesc :: String
                        , lDesc :: String
                        , keywords :: Set String
+                       , immovable :: Bool
                        } deriving (Show, Read, Eq)
 
 instance GameDef ItemDef where

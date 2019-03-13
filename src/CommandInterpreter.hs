@@ -10,6 +10,7 @@ import Mob
 import Link
 import LinkDef
 import GameObj
+import Item
 import Room
 import Passage
 import RoomDef
@@ -62,6 +63,7 @@ commandList =   [ CommandEntry "help" targetNothing targetNothing (\ _ _ ->
                 )
                 , CommandEntry "get" [FindRoomItem] targetNothing (\ args world -> do
                     item <- asItem $ target1 args
+                    _ <- if isImmovable item then Left $ (GameObj.sDesc item) ++ " is too heavy to move." else Right ()
                     updateWorld world [ updateRoom (Room.removeItem item) $ locationId $ actor args
                                       , updateMob (Mob.addItem item) $ Mob.id $ actor args
                                       , sendMessageTo args MsgActorRoom [Desc Actor, Sur " " $ Verb Actor "take" "takes", Desc Target1, Const "."]

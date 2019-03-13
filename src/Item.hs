@@ -14,4 +14,6 @@ instance GameObj Item where
 
 itemId :: Item -> DefId
 itemId item = GameDef.defId (Item.base item)
-    
+
+isImmovable :: Item -> Bool
+isImmovable item = immovable $ base item

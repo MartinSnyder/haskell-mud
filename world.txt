@@ -8,6 +8,7 @@ WorldDef { entry = (0,0)
                                 , sDesc = "a flat stone"
                                 , lDesc = "Time has smoothed this stone to have a perfectly flat surface."
                                 , keywords = fromList ["flat","stone"]
+                                , immovable = False
                         }
                     ]
                     , links = [
@@ -63,6 +64,7 @@ WorldDef { entry = (0,0)
                                   , sDesc = "a marble railing"
                                   , lDesc = "This polished marble railing is all that prevents you from falling into the courtyard below."
                                   , keywords = fromList ["marble","railing"]
+                                  , immovable = True
                           }
                       ]
                       , links = [
@@ -93,7 +95,14 @@ WorldDef { entry = (0,0)
             , RoomDef { defId = (1,7)
                       , name = "A stone antechamber"
                       , desc = "A small room with stone walls. Empty sconces adorn the walls, but the torches they once held have long since rotted away."
-                      , initialItems = []
+                      , initialItems = [
+                          ItemDef { defId = (0,2)
+                                  , sDesc = "a rusty metal key"
+                                  , lDesc = "A large but otherwise nondescript key."
+                                  , keywords = fromList ["rusty","metal","key"]
+                                  , immovable = False
+                          }
+                      ]
                       , links = [
                             LinkDef { direction = West , targetRoomId = (1,5), passageId = Just (1, 3) }
                           , LinkDef { direction = Up , targetRoomId = (1,8), passageId = Nothing }
@@ -103,13 +112,7 @@ WorldDef { entry = (0,0)
             , RoomDef { defId = (1,8)
                       , name = "The East gallery"
                       , desc = "You can see down into the courtyard below, which appears to have been setup for some sort of sporting event."
-                      , initialItems = [
-                          ItemDef { defId = (0,2)
-                                  , sDesc = "a rusty metal key"
-                                  , lDesc = "A large but otherwise nondescript key."
-                                  , keywords = fromList ["rusty","metal","key"]
-                          }
-                      ]
+                      , initialItems = []
                       , links = [
                             LinkDef { direction = Down , targetRoomId = (1,7), passageId = Nothing }
                       ]
