@@ -139,7 +139,7 @@ WorldDef { entry = (0,0)
                            , sDesc = "a strong metal gate"
                            , lDesc = "This metal gate is formidable and mounted securely to the stone archway that surrounds it. A complicated locking mechanism controls the latch."
                            , keywords = fromList ["metal", "gate"]
-                           , passageType = Closable True
+                           , passageType = Lockable True True (0,2)
               }
          ]
     }
