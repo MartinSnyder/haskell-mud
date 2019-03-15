@@ -13,6 +13,8 @@ var mud = {}; // Namespace
 	mud.user = null;
 	mud.pollingHandle = -1;
 	mud.idleTicks = 0;
+	mud.previousCommands = [];
+	mud.previousCommandsIndex = -1;
 
 	mud.initPage = function () {
 		document.getElementById(mud.ENTRY_ID).focus();
@@ -39,39 +41,92 @@ var mud = {}; // Namespace
 
 	mud.onEntryKeyPress = function (oCtl, oEvent) {
 		if (mud.isEnterKeyPress(oEvent)) {
-			// Capture the current text as a command
-			var sEntry = oCtl.value;
+			mud.submitCommand(oCtl);
+		}
+		else if(mud.isUpKeyPress(oEvent)) {
+			mud.recallNextHistoricalCommand(oCtl);
+		}
+		else if(mud.isDownKeyPress(oEvent)) {
+			mud.recallPrevHistoricalCommand(oCtl);
+		}
+	};
 
-			// Reset the text entry for the next command
-			oCtl.value = '';
+	mud.submitCommand = function (oCtl) {
+		// Capture the current text as a command
+		var sEntry = oCtl.value;
 
-			if (mud.user === null) {
-				// Set the username first if we still need one
-				if (sEntry.length > 0) {
-					mud.user = sEntry;
-					mud.writeOutput('Type \'help\' for a list of commands');
-				}
+		// Reset the text entry for the next command
+		oCtl.value = '';
+
+		if (mud.user === null) {
+			// Set the username first if we still need one
+			if (sEntry.length > 0) {
+				mud.user = sEntry;
+				mud.writeOutput('Type \'help\' for a list of commands');
 			}
-			else {
-				// Process the entry
-				mud.idleTicks = 0;
-				mud.processEntry(sEntry);
-			}
+		}
+		else {
+			// Add the command to the beginning of the command history
+			mud.previousCommands.unshift(sEntry);
+			//  Reset our place in the previous commands list to the beginning
+			mud.previousCommandsIndex = -1;
+
+			// Process the entry
+			mud.idleTicks = 0;
+			mud.processEntry(sEntry);
+		}
+	};
+
+	mud.recallNextHistoricalCommand = function (oCtl) {
+		//  Ensure that we aren't at the end of our historical command list
+		if(mud.previousCommandsIndex + 1 <= mud.previousCommands.length - 1)
+		{
+			mud.previousCommandsIndex++;
+			oCtl.value = mud.previousCommands[mud.previousCommandsIndex];
+		}
+	};
+
+	mud.recallPrevHistoricalCommand = function (oCtl) {
+		//  Ensure that we aren't going past the beginning of our historical command list
+		if(mud.previousCommandsIndex - 1 >= 0)
+		{
+			mud.previousCommandsIndex--;
+			oCtl.value = mud.previousCommands[mud.previousCommandsIndex];
 		}
 	};
 
 	mud.isEnterKeyPress = function (oEvent) {
-		var keynum;
-
-		if (window.event) { // IE8 and earlier
-			keynum = oEvent.keyCode;
-		} else if (oEvent.which) { // IE9/Firefox/Chrome/Opera/Safari
-			keynum = oEvent.which;
-		}
+		var keynum = mud.captureKeyNum(oEvent);
 
 		// Detect ENTER key
 		return ('\n' === String.fromCharCode(keynum) || '\r' === String.fromCharCode(keynum));
 	};
+
+	mud.isUpKeyPress = function (oEvent) {
+		var keynum = mud.captureKeyNum(oEvent);
+
+		// Detect UP key
+		return (38 == keynum);
+	};
+
+	mud.isDownKeyPress = function (oEvent) {
+		var keynum = mud.captureKeyNum(oEvent);
+
+		// Detect DOWN key
+		return (40 == keynum);
+	};
+
+	mud.captureKeyNum = function (oEvent) {
+		var result;
+
+		if (window.event) { // IE8 and earlier
+			result = oEvent.keyCode;
+		} else if (oEvent.which) { // IE9/Firefox/Chrome/Opera/Safari
+			result = oEvent.which;
+		}
+
+		return result;
+	}
 
 	mud.processEntry = function (sEntry) {
 		// Early return if no user yet
