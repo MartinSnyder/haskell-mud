@@ -8,6 +8,6 @@
 	<body onload="return mud.initPage();">
 		<textarea id="output" readonly="true"></textarea>
 		<br />
-		<input type="text" id="entry" onkeypress="return mud.onEntryKeyPress(this, event);" />
+		<input type="text" id="entry" onkeydown="return mud.onEntryKeyPress(this, event);" />
 	</body>
 </html>
